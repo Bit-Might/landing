@@ -1,135 +1,414 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Бит Майт.</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: #000;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .title {
-            font-family: 'Arial', sans-serif;
-            font-size: 10vw;
-            color: #b000ff;
-            text-shadow: 
-                0 0 10px #b000ff,
-                0 0 20px #b000ff,
-                0 0 40px #9000ff;
-            letter-spacing: 0.05em;
-            z-index: 10;
-            position: relative;
-            user-select: none;
-        }
-
-        canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 5;
-        }
-    </style>
-</head>
-<body>
-    <div class="title">Бит Майт.</div>
-    <canvas id="snowCanvas"></canvas>
-
-    <script>
-        const canvas = document.getElementById('snowCanvas');
-        const ctx = canvas.getContext('2d');
-
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
-
-        const snowflakes = [];
-        const MAX_FLAKES = 300;
-
-        let windX = 0;
-        let windTarget = 0;
-        let gustTimer = 0;
-
-        class Snowflake {
-            constructor() {
-                this.reset(true);
+<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>БитМайт.</title>
+        <style>
+            /* Базовые настройки и цвета */
+            :root {
+                --bg-color: #386781;
+                --dark-shadow: #1e3a4b;
+                --orange: #ff8232;
+                --text-light: #ffffff;
+                --text-dark: #000000;
+                --border-color: rgba(255, 255, 255, 0.8);
             }
 
-            reset(initial = false) {
-                this.x = Math.random() * canvas.width * 1.5 - canvas.width * 0.25;
-                this.y = initial ? Math.random() * canvas.height : -10;
-                this.size = Math.random() * 3 + 1;
-                this.speedY = Math.random() * 2 + 1;
-                this.speedX = Math.random() * 0.5 - 0.25;
-                this.opacity = Math.random() * 0.7 + 0.3;
-                this.wobble = Math.random() * Math.PI * 2;
-                this.wobbleSpeed = Math.random() * 0.05 + 0.01;
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             }
 
-            update() {
-                this.wobble += this.wobbleSpeed;
-                const turbulence = Math.sin(this.wobble) * 0.5;
-                this.x += this.speedX + windX + turbulence;
-                this.y += this.speedY;
+            body {
+                background-color: #2b4f63;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                padding: 20px;
+            }
 
-                if (this.y > canvas.height + 10 || this.x > canvas.width + 50 || this.x < -50) {
-                    this.reset();
+            /* Главный контейнер сайта */
+            .site-container {
+                background-color: var(--bg-color);
+                width: 100%;
+                max-width: 1200px;
+                box-shadow: -20px 20px 0px var(--dark-shadow);
+                border: 1px solid var(--border-color);
+                display: flex;
+                flex-direction: column;
+            }
+
+            /*
+          ОБНОВЛЕНИЕ 1: Шапка (Header)
+          Теперь использует ту же сетку (1fr 300px), что и нижний блок,
+          чтобы ширина кнопки 100% совпадала с шириной правого сайдбара.
+        */
+            .header {
+                display: grid;
+                grid-template-columns: 1fr 300px; /* Кнопка строго 300px */
+                align-items: stretch;
+                border-bottom: 1px solid var(--border-color);
+                height: 80px;
+            }
+
+            .logo-nav-wrapper {
+                display: flex;
+                align-items: center;
+            }
+
+            .logo {
+                font-size: 42px;
+                font-weight: bold;
+                color: var(--text-light);
+                text-shadow: 4px 4px 0px var(--dark-shadow);
+                padding-left: 40px;
+                padding-right: 40px; /* Отступ между логотипом и началом ссылок */
+                cursor: pointer;
+            }
+
+            /*
+          ОБНОВЛЕНИЕ 2: Навигация (Ссылки)
+          flex-grow: 1 растягивает блок на всю оставшуюся ширину
+          space-evenly создает идеально равные отступы (justified)
+        */
+            .nav {
+                display: flex;
+                flex-grow: 1;
+                justify-content: space-evenly;
+            }
+
+            .nav a {
+                color: var(--text-light);
+                text-decoration: none;
+                font-size: 16px;
+                transition: opacity 0.2s;
+            }
+
+            .nav a:hover {
+                opacity: 0.7;
+            }
+
+            .btn-order {
+                background-color: var(--orange);
+                color: var(--text-dark);
+                border: none;
+                border-left: 1px solid var(--border-color);
+                width: 100%; /* Занимает всю ячейку сетки (300px) */
+                font-weight: bold;
+                font-size: 16px;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                text-transform: uppercase;
+            }
+
+            .btn-order:hover {
+                background-color: #e5752d;
+            }
+
+            /* Основной контент (Grid) */
+            .main-content {
+                display: grid;
+                grid-template-columns: 1fr 300px; /* Сайдбар строго 300px */
+                min-height: 500px;
+            }
+
+            /* Левая колонка */
+            .left-column {
+                display: flex;
+                flex-direction: column;
+                border-right: 1px solid var(--border-color);
+            }
+
+            /* Секция с играми (скроллируемая область) */
+            .games-section {
+                height: 420px;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            /* СТИЛИЗАЦИЯ БЕЛОГО СЛАЙДЕРА (SCROLLBAR) */
+            .games-section::-webkit-scrollbar {
+                width: 24px;
+            }
+
+            .games-section::-webkit-scrollbar-track {
+                background: transparent;
+                border-left: 1px solid var(--border-color);
+            }
+
+            .games-section::-webkit-scrollbar-thumb {
+                background-color: #ffffff;
+                border-radius: 0;
+                border-left: 1px solid var(--border-color);
+            }
+
+            /* Сетка для карточек (максимум 3 в ряд) */
+            .games-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 40px;
+                padding: 40px;
+                padding-bottom: 60px;
+            }
+
+            /* Карточка игры */
+            .game-card {
+                background-color: var(--orange);
+                text-decoration: none;
+                color: var(--text-dark);
+                box-shadow: 15px 15px 0px var(--dark-shadow);
+                transition:
+                    transform 0.2s,
+                    box-shadow 0.2s;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .game-card:hover {
+                transform: translate(5px, 5px);
+                box-shadow: 10px 10px 0px var(--dark-shadow);
+            }
+
+            /* Имитация обложек */
+            .card-cover {
+                height: 180px;
+                background-color: #555;
+                position: relative;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                padding: 10px;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            }
+
+            .card-cover img {
+                width: 100%;
+                height: 100%;
+            }
+
+            .cover-1 {
+                background: linear-gradient(135deg, #4b8aa8, #2a5a73);
+                color: white;
+            }
+            .cover-1 h3 {
+                font-size: 24px;
+                text-transform: uppercase;
+                text-shadow: 2px 2px 0 #d9534f;
+                line-height: 1.1;
+            }
+
+            .cover-2 {
+                background: #c18e5a;
+                color: white;
+            }
+            .cover-2 h3 {
+                font-size: 22px;
+                font-family: "Courier New", Courier, monospace;
+                text-shadow: 2px 2px 0 black;
+                transform: rotate(-5deg);
+            }
+
+            .cover-3 {
+                background-color: var(--orange);
+            }
+            .star-shape {
+                background-color: var(--bg-color);
+                color: white;
+                padding: 30px 20px;
+                clip-path: polygon(
+                    50% 0%,
+                    61% 35%,
+                    98% 35%,
+                    68% 57%,
+                    79% 91%,
+                    50% 70%,
+                    21% 91%,
+                    32% 57%,
+                    2% 35%,
+                    39% 35%
+                );
+                font-size: 14px;
+            }
+
+            .cover-4 {
+                background: linear-gradient(135deg, #8a4ba8, #5a2a73);
+                color: white;
+            }
+            .cover-4 h3 {
+                font-size: 22px;
+                text-transform: uppercase;
+                text-shadow: 2px 2px 0 black;
+            }
+
+            .card-info {
+                padding: 20px 15px;
+                flex-grow: 1;
+            }
+
+            .card-info h4 {
+                font-size: 16px;
+                margin-bottom: 5px;
+            }
+
+            .card-info p {
+                font-size: 12px;
+                opacity: 0.8;
+            }
+
+            /* Нижний текстовый блок под играми */
+            .bottom-text {
+                padding: 30px 40px;
+                color: var(--text-light);
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            /* Правая колонка (Сайдбар) */
+            .sidebar {
+                padding: 40px 30px;
+                color: var(--text-light);
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            /* Адаптивность для мобильных устройств */
+            @media (max-width: 1000px) {
+                .games-grid {
+                    grid-template-columns: repeat(2, 1fr);
                 }
             }
 
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(176, 0, 255, ${this.opacity})`;
-                ctx.shadowBlur = this.size * 3;
-                ctx.shadowColor = '#b000ff';
-                ctx.fill();
-                ctx.shadowBlur = 0;
+            @media (max-width: 800px) {
+                .header {
+                    display: flex;
+                    flex-direction: column;
+                    height: auto;
+                }
+                .logo-nav-wrapper {
+                    flex-direction: column;
+                    padding: 20px;
+                    gap: 20px;
+                }
+                .logo {
+                    padding: 0;
+                }
+                .nav {
+                    justify-content: center;
+                    gap: 40px;
+                }
+                .btn-order {
+                    border-left: none;
+                    border-top: 1px solid var(--border-color);
+                    padding: 20px;
+                }
+
+                .main-content {
+                    grid-template-columns: 1fr;
+                }
+                .left-column {
+                    border-right: none;
+                }
+                .games-grid {
+                    grid-template-columns: 1fr;
+                }
             }
-        }
+        </style>
+    </head>
+    <body>
+        <div class="site-container">
+            <!-- Шапка -->
+            <header class="header">
+                <div class="logo-nav-wrapper">
+                    <div class="logo">БитМайт.</div>
+                    <nav class="nav">
+                        <a href="#games">Игры</a>
+                        <a href="#about">О проекте</a>
+                    </nav>
+                </div>
+                <button class="btn-order">ЗАКАЗАТЬ ИГРУ</button>
+            </header>
 
-        for (let i = 0; i < MAX_FLAKES; i++) {
-            snowflakes.push(new Snowflake());
-        }
+            <!-- Основной контент -->
+            <div class="main-content">
+                <!-- Левая часть -->
+                <div class="left-column">
+                    <!-- Контейнер с играми (со скроллом) -->
+                    <div class="games-section">
+                        <div class="games-grid">
+                            <a href="#game1" class="game-card">
+                                <div class="card-cover cover-1">
+                                    <img
+                                        src="assets/game1.png"
+                                        alt="Не всё в порядке"
+                                    />
+                                </div>
+                                <div class="card-info">
+                                    <h4>НЕ ВСЁ В ПОРЯДКЕ</h4>
+                                    <p>5 уровней</p>
+                                </div>
+                            </a>
 
-        function updateWind() {
-            gustTimer--;
-            if (gustTimer <= 0) {
-                windTarget = (Math.random() - 0.3) * 8;
-                gustTimer = Math.random() * 120 + 60;
-            }
-            windX += (windTarget - windX) * 0.02;
-        }
+                            <a href="#game2" class="game-card">
+                                <div class="card-cover cover-2">
+                                    <img
+                                        src="assets/game2.png"
+                                        alt="Терьерт-трис"
+                                    />
+                                </div>
+                                <div class="card-info">
+                                    <h4>ТЕРЬЕРТРИС</h4>
+                                    <p>1 уровень</p>
+                                </div>
+                            </a>
 
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            updateWind();
-            snowflakes.forEach(flake => {
-                flake.update();
-                flake.draw();
-            });
-            requestAnimationFrame(animate);
-        }
+                            <a href="#game3" class="game-card">
+                                <div class="card-cover cover-3">
+                                    <img
+                                        src="assets/coming_soon.svg"
+                                        alt="Скоро"
+                                    />
+                                </div>
+                                <div class="card-info">
+                                    <h4>НОВАЯ ИГРА</h4>
+                                    <p>Скоро</p>
+                                </div>
+                            </a>
 
-        animate();
-    </script>
-</body>
+                            <a href="#game4" class="game-card">
+                                <div class="card-cover cover-4">
+                                    <h3>СЕКРЕТНЫЙ<br />ПРОЕКТ</h3>
+                                </div>
+                                <div class="card-info">
+                                    <h4>СЕКРЕТНЫЙ ПРОЕКТ</h4>
+                                    <p>В разработке</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Текст под играми -->
+                    <div class="bottom-text">
+                        Прародителем текста-рыбы является известный "Lorem
+                        Ipsum" — латинский текст, ноги которого растут аж из 45
+                        года до нашей эры. Сервисов по созданию случайного
+                        текста на основе Lorem почитать
+                    </div>
+                </div>
+
+                <!-- Правая часть (сайдбар) -->
+                <div class="sidebar">
+                    Прародителем текста-рыбы является известный "Lorem Ipsum" —
+                    латинский текст, ноги которого растут аж из 45 года до нашей
+                    эры. Сервисов по созданию случайного текста на основе Lorem
+                    почитать
+                </div>
+            </div>
+        </div>
+    </body>
 </html>
