@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>НЕ ВСЁ В ПОРЯДКЕ - Симулятор ОКР</title>
+    <style>
+        @font-face {
+          font-family: 'PixelFont';
+          src: url('Chava-Regular.otf') format('opentype');
+        }
+
+        :root {
+            --mac-blue: #007AFF;
+            --icon-size: 84px;
+            --slot-size: 100px;
+            --gap: 20;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: #8e8e93;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            position: relative;
+        }
+
+                /* ========== ЗАСТАВКА ========== */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+            cursor: pointer;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            transform: scale(1.05);
+            pointer-events: none;
+        }
+
+        .splash-image {
+            max-width: 90%;
+            max-height: 85%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: subtleZoom 3s ease-in-out infinite;
+        }
+
+        .splash-hint {
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+            margin-top: 30px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: fadeInOut 2s infinite;
+        }
+
+        @keyframes subtleZoom {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+        }
+
+        /* --- ВЕРХНЯЯ ПАНЕЛЬ --- */
+        .menu-bar {
+            height: 28px;
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: black;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 1000;
+            position: relative;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            border-bottom: 2px solid;
+        }
+
+        .menu-left span { margin-right: 15px; cursor: default; }
+        .bold { font-weight: 700; }
+        
+        /* --- ДОК --- */
+        .dock-container {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .dock {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            gap: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .dock-icon {
+            width: 50px; height: 50px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 12px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .dock-icon:hover { transform: scale(1.2) translateY(-10px); }
+
+        /* --- ИГРОВАЯ ЗОНА --- */
+        #game-area {
+            position: absolute;
+            top: 40px;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 120px);
+            pointer-events: none;
+        }
+
+        /* Сетка - видна только при запоминании */
+        .grid-slot {
+            position: absolute;
+            width: var(--slot-size);
+            height: var(--slot-size);
+            border: 2px dashed rgba(255, 255, 255, 0.4);
+            border-radius: 12px;
+            box-sizing: border-box;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+
+        .grid-slot.hidden {
+            opacity: 0;
+        }
+
+        /* Точка центра ячейки (для наглядности при проверке) */
+        .center-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ff3b30;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .center-point.visible {
+            opacity: 0.8;
+        }
+
+        /* Папки */
+        .folder {
+            position: absolute;
+            width: var(--icon-size);
+            height: var(--icon-size);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            z-index: 100;
+            transition: top 0.3s ease-out, left 0.3s ease-out, transform 0.1s, opacity 0.3s;
+            pointer-events: auto;
+            transform: translate(-50%, -50%);
+        }
+
+        .folder:active { 
+            cursor: grabbing; 
+            transform: translate(-50%, -50%) scale(1.15);
+            z-index: 1000;
+        }
+        
+        .folder.locked { 
+            pointer-events: none; 
+            opacity: 0.7;
+            cursor: default;
+        }
+
+        .folder.dragging {
+            transition: none;
+        }
+        
+        .folder-svg {
+            width: 70px; height: 70px;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+        }
+
+        /* При проверке показываем где должна была быть */
+        .folder.original-position {
+            opacity: 0.4;
+            transform: translate(-50%, -50%) scale(0.9);
+            pointer-events: none;
+        }
+
+        /* Линия ошибки */
+        .error-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, #4cd964, #ffcc00, #ff3b30);
+            transform-origin: left center;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        /* Кнопка старта */
+        #start-btn {
+            width: 300px;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        #start-btn:hover { transform: translate(-50%, -50%) scale(1.05); }
+
+        /* Кнопка проверки */
+        #check-btn {
+            width: 200px;
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: none;
+            cursor: pointer;
+            display: none;
+            transition: 0.2s;
+        }
+        #check-btn:hover { transform: translate(-50%, -50%) scale(1.05); }
+
+        /* Сообщение о статусе */
+        #status-msg {
+            font-family: 'PixelFont', sans-serif;
+            position: absolute;
+            top: 40px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 1500;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        /* Результаты */
+        #results {
+            font-family: 'PixelFont', sans-serif;
+            position: absolute;
+            top: 50%;
+            left: 16%;
+            transform: translate(-50%, -50%);
+            background-image: url('result_back.svg');
+            background-repeat: no-repeat;
+            background-size: cover; 
+            padding: 60px 65px;
+            text-align: center;
+            z-index: 3000;
+            display: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        #results h2 {
+            margin: 0 0 20px 0;
+            color: #333;
+            font-size: 32px;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(var(--mac-blue) 0%, #e5e5e5 0%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .score-value {
+            position: relative;
+            z-index: 1;
+            font-size: 36px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .score-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .error-details {
+            text-align: left;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .error-details p {
+            margin: 5px 0;
+        }
+
+        #restart-btn {
+            width: 200px;
+            position: absolute;
+            bottom: 0px;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        /* Таймер запоминания */
+        #timer-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: var(--mac-blue);
+            width: 0%;
+            transition: width 0.1s linear;
+            z-index: 1600;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- ========== ЗАСТАВКА ========== -->
+    <div class="splash-screen" id="splash" onclick="hideSplash()">
+        <img src="splash.png" alt="НЕ ВСЁ В ПОРЯДКЕ" class="splash-image">
+        <div class="splash-hint">Кликните чтобы начать</div>
+    </div>
+
+    <!-- ========== ИГРОВОЙ ИНТЕРФЕЙС ========== -->
+    <div class="menu-bar">
+        <div class="menu-left">
+            <span class="bold"></span>
+            <span>Файл</span>
+            <span>Правка</span>
+            <span>Вид</span>
+        </div>
+        <div class="menu-right">
+            <span id="clock">12:00</span>
+        </div>
+    </div>
+
+    <!-- Таймер запоминания -->
+    <div id="timer-bar"></div>
+
+    <!-- Статус игры -->
+    <div id="status-msg">Запомните расположение папок!</div>
+
+    <!-- Кнопка старта -->
+    <div id="start-btn"><img src="start.svg"></div>
+
+    <!-- Кнопка проверки -->
+    <div id="check-btn"><img src="check.svg"></div>
+
+    <!-- Игровая область -->
+    <div id="game-area"></div>
+
+    <!-- Результаты -->
+    <div id="results">
+        <h2>РЕЗУЛЬТАТ</h2>
+            <span class="score-value" id="score-value">0%</span>
+        <div class="score-label">ТОЧНОСТЬ ПОЗИЦИОНИРОВАНИЯ</div>
+        <div class="error-details" id="error-details"></div>
+        <div id="restart-btn"><img src="restart.svg"></div> 
+    </div>
+
+<script>
+    // ========== ЗАСТАВКА ==========
+    function hideSplash() {
+        const splash = document.getElementById('splash');
+        splash.classList.add('hidden');
+        setTimeout(() => {
+            splash.style.display = 'none';
+        }, 800);
+    }
+    
+    // Конфигурация
+    const GRID_COLS = 4;
+    const GRID_ROWS = 3;
+    const SLOT_SIZE = 100;
+    const GAP = 20;
+    const FOLDER_COUNT = 8;
+    const MEMORIZE_TIME = 3000;
+    const PERFECT_THRESHOLD = 10; // Пикселей для идеального совпадения
+    const MAX_ERROR_DISTANCE = 200; // Максимальная ошибка для 0%
+
+    const gameArea = document.getElementById('game-area');
+    const statusMsg = document.getElementById('status-msg');
+    const startBtn = document.getElementById('start-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const checkBtn = document.getElementById('check-btn');
+    const timerBar = document.getElementById('timer-bar');
+    const resultsEl = document.getElementById('results');
+    
+    let slots = [];
+    let folders = [];
+    let centerPoints = []; // Центральные точки ячеек
+
+    // Для перетаскивания
+    let isDragging = false;
+    let currentFolder = null;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    // Часы
+    setInterval(() => {
+        const now = new Date();
+        document.getElementById('clock').textContent = now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+    }, 1000);
+
+    startBtn.addEventListener('click', function() {
+    startGame();
+});
+
+    checkBtn.addEventListener('click', function() {
+    checkResults();
+});
+
+    restartBtn.addEventListener('click', function() {
+    location.reload();
+});
+
+    // SVG папки
+    function getFolderSVG() {
+        return `
+        <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+     viewBox="0 0 202.1 185.26" style="enable-background:new 0 0 202.1 185.26;" xml:space="preserve">
+<style type="text/css">
+    .st0{fill:#0097EA;}
+    .st1{fill:#0360C6;}
+    .st2{fill:#6AD3F2;}
+    .st3{fill:#00B8EC;}
+</style>
+<g>
+    <rect x="8.42" y="168.41" width="8.42" height="8.42"/>
+    <rect y="159.99" width="8.42" height="8.42"/>
+    <rect y="151.57" width="8.42" height="8.42"/>
+    <rect y="143.15" width="8.42" height="8.42"/>
+    <rect y="134.73" width="8.42" height="8.42"/>
+    <rect y="126.31" width="8.42" height="8.42"/>
+    <rect y="117.89" width="8.42" height="8.42"/>
+    <rect y="109.47" width="8.42" height="8.42"/>
+    <rect y="101.05" width="8.42" height="8.42"/>
+    <rect y="92.63" width="8.42" height="8.42"/>
+    <rect y="84.21" width="8.42" height="8.42"/>
+    <rect y="75.79" width="8.42" height="8.42"/>
+    <rect y="67.37" width="8.42" height="8.42"/>
+    <rect y="58.95" width="8.42" height="8.42"/>
+    <rect y="50.52" width="8.42" height="8.42"/>
+    <rect y="42.1" width="8.42" height="8.42"/>
+    <rect y="33.68" width="8.42" height="8.42"/>
+    <rect y="25.26" width="8.42" height="8.42"/>
+    <rect y="16.84" width="8.42" height="8.42"/>
+    <rect x="8.42" y="8.42" width="8.42" height="8.42"/>
+    <rect x="16.84" width="8.42" height="8.42"/>
+    <rect x="25.26" width="8.42" height="8.42"/>
+    <rect x="33.68" width="8.42" height="8.42"/>
+    <rect x="42.1" width="8.42" height="8.42"/>
+    <rect x="50.52" width="8.42" height="8.42"/>
+    <rect x="58.95" width="8.42" height="8.42"/>
+    <rect x="67.37" y="8.42" width="8.42" height="8.42"/>
+    <rect x="75.79" y="16.84" width="8.42" height="8.42"/>
+    <rect x="84.21" y="16.84" width="8.42" height="8.42"/>
+    <rect x="92.63" y="16.84" width="8.42" height="8.42"/>
+    <rect x="101.05" y="16.84" width="8.42" height="8.42"/>
+    <rect x="109.47" y="16.84" width="8.42" height="8.42"/>
+    <rect x="117.89" y="16.84" width="8.42" height="8.42"/>
+    <rect x="126.31" y="16.84" width="8.42" height="8.42"/>
+    <rect x="134.73" y="16.84" width="8.42" height="8.42"/>
+    <rect x="143.15" y="16.84" width="8.42" height="8.42"/>
+    <rect x="151.57" y="16.84" width="8.42" height="8.42"/>
+    <rect x="159.99" y="16.84" width="8.42" height="8.42"/>
+    <rect x="168.41" y="16.84" width="8.42" height="8.42"/>
+    <rect x="176.84" y="16.84" width="8.42" height="8.42"/>
+    <rect x="185.26" y="25.26" width="8.42" height="8.42"/>
+    <rect x="193.68" y="33.68" width="8.42" height="8.42"/>
+    <rect x="193.68" y="42.1" width="8.42" height="8.42"/>
+    <rect x="193.68" y="50.52" width="8.42" height="8.42"/>
+    <rect x="193.68" y="58.95" width="8.42" height="8.42"/>
+    <rect x="193.68" y="67.37" width="8.42" height="8.42"/>
+    <rect x="193.68" y="75.79" width="8.42" height="8.42"/>
+    <rect x="193.68" y="84.21" width="8.42" height="8.42"/>
+    <rect x="193.68" y="92.63" width="8.42" height="8.42"/>
+    <rect x="193.68" y="101.05" width="8.42" height="8.42"/>
+    <rect x="193.68" y="109.47" width="8.42" height="8.42"/>
+    <rect x="193.68" y="117.89" width="8.42" height="8.42"/>
+    <rect x="193.68" y="126.31" width="8.42" height="8.42"/>
+    <rect x="193.68" y="134.73" width="8.42" height="8.42"/>
+    <rect x="193.68" y="143.15" width="8.42" height="8.42"/>
+    <rect x="193.68" y="151.57" width="8.42" height="8.42"/>
+    <rect x="193.68" y="159.99" width="8.42" height="8.42"/>
+    <rect x="185.26" y="168.41" width="8.42" height="8.42"/>
+    <rect x="176.84" y="176.84" width="8.42" height="8.42"/>
+    <rect x="168.41" y="176.84" width="8.42" height="8.42"/>
+    <rect x="159.99" y="176.84" width="8.42" height="8.42"/>
+    <rect x="151.57" y="176.84" width="8.42" height="8.42"/>
+    <rect x="143.15" y="176.84" width="8.42" height="8.42"/>
+    <rect x="134.73" y="176.84" width="8.42" height="8.42"/>
+    <rect x="126.31" y="176.84" width="8.42" height="8.42"/>
+    <rect x="117.89" y="176.84" width="8.42" height="8.42"/>
+    <rect x="109.47" y="176.84" width="8.42" height="8.42"/>
+    <rect x="101.05" y="176.84" width="8.42" height="8.42"/>
+    <rect x="92.63" y="176.84" width="8.42" height="8.42"/>
+    <rect x="84.21" y="176.84" width="8.42" height="8.42"/>
+    <rect x="75.79" y="176.84" width="8.42" height="8.42"/>
+    <rect x="67.37" y="176.84" width="8.42" height="8.42"/>
+    <rect x="58.95" y="176.84" width="8.42" height="8.42"/>
+    <rect x="50.52" y="176.84" width="8.42" height="8.42"/>
+    <rect x="42.1" y="176.84" width="8.42" height="8.42"/>
+    <rect x="33.68" y="176.84" width="8.42" height="8.42"/>
+    <rect x="25.26" y="176.84" width="8.42" height="8.42"/>
+    <rect x="16.84" y="176.84" width="8.42" height="8.42"/>
+    <rect x="176.84" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="168.41" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="159.99" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="151.57" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="143.15" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="134.73" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="126.31" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="117.89" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="109.47" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="101.05" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="92.63" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="84.21" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="75.79" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="67.37" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="58.95" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="50.52" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="42.1" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="33.68" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="16.84" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="25.26" y="168.41" class="st0" width="8.42" height="8.42"/>
+    <rect x="50.52" y="8.42" class="st0" width="8.42" height="8.42"/>
+    <rect x="58.95" y="8.42" class="st0" width="8.42" height="8.42"/>
+    <rect x="42.1" y="8.42" class="st0" width="8.42" height="8.42"/>
+    <rect x="33.68" y="8.42" class="st0" width="8.42" height="8.42"/>
+    <rect x="25.26" y="8.42" class="st0" width="8.42" height="8.42"/>
+    <rect x="16.84" y="8.42" class="st0" width="8.42" height="8.42"/>
+    <rect x="50.52" y="16.84" class="st0" width="8.42" height="8.42"/>
+    <rect x="58.95" y="16.84" class="st0" width="8.42" height="8.42"/>
+    <rect x="42.1" y="16.84" class="st0" width="8.42" height="8.42"/>
+    <rect x="33.68" y="16.84" class="st0" width="8.42" height="8.42"/>
+    <rect x="25.26" y="16.84" class="st0" width="8.42" height="8.42"/>
+    <rect x="16.84" y="16.84" class="st0" width="8.42" height="8.42"/>
+    <rect x="50.52" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="58.95" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="67.37" y="16.84" class="st0" width="8.42" height="8.42"/>
+    <rect x="67.37" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="42.1" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="33.68" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="25.26" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="16.84" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="8.42" y="16.84" class="st0" width="8.42" height="8.42"/>
+    <rect x="8.42" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="117.89" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="126.31" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="134.73" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="109.47" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="151.57" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="159.99" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="168.41" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="176.84" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="185.26" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="143.15" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="101.05" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="92.63" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="84.21" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="75.79" y="25.26" class="st0" width="8.42" height="8.42"/>
+    <rect x="8.42" y="33.68" class="st0" width="8.42" height="8.42"/>
+    <rect x="50.52" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="58.95" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="67.37" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="42.1" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="33.68" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="25.26" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="16.84" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="117.89" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="126.31" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="134.73" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="109.47" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="151.57" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="159.99" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="168.41" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="176.84" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="185.26" y="42.1" class="st1" width="8.42" height="8.42"/>
+    <rect x="143.15" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="101.05" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="92.63" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="84.21" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="75.79" y="33.68" class="st1" width="8.42" height="8.42"/>
+    <rect x="8.42" y="42.1" class="st1" width="8.42" height="8.42"/>
+    <g>
+        <rect x="50.52" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="58.95" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="67.37" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="42.1" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="33.68" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="25.26" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="16.84" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="117.89" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="126.31" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="134.73" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="109.47" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="151.57" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="159.99" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="168.41" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="176.84" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="185.26" y="50.52" class="st2" width="8.42" height="8.42"/>
+        <rect x="143.15" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="101.05" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="92.63" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="84.21" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="75.79" y="42.1" class="st2" width="8.42" height="8.42"/>
+        <rect x="8.42" y="50.52" class="st2" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="50.52" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="58.95" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="58.95" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="67.37" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="67.37" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="75.79" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="75.79" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="84.21" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="84.21" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="92.63" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="92.63" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="101.05" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="101.05" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="109.47" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="109.47" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="117.89" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="117.89" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="126.31" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="126.31" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="134.73" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="134.73" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="143.15" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="143.15" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="151.57" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="185.26" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="151.57" class="st3" width="8.42" height="8.42"/>
+        <rect x="8.42" y="159.99" class="st3" width="8.42" height="8.42"/>
+    </g>
+    <g>
+        <rect x="50.52" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="58.95" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="67.37" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="42.1" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="33.68" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="25.26" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="16.84" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="117.89" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="126.31" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="134.73" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="109.47" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="151.57" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="159.99" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="168.41" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="176.84" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="143.15" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="101.05" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="92.63" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="84.21" y="159.99" class="st3" width="8.42" height="8.42"/>
+        <rect x="75.79" y="159.99" class="st3" width="8.42" height="8.42"/>
+    </g>
+</g>
+</svg>
+`;
+    }
+
+    function startGame() {
+        startBtn.style.display = 'none';
+        createGrid();
+        createFolders();
+        
+        placeFoldersInGrid();
+        statusMsg.style.opacity = 1;
+        statusMsg.textContent = "Запомните расположение по сетке...";
+        
+        timerBar.style.width = '0%';
+        setTimeout(() => { timerBar.style.width = '100%'; }, 10);
+        setTimeout(() => { timerBar.style.width = '0%'; }, MEMORIZE_TIME);
+
+        setTimeout(() => {
+            hideGrid();
+            scrambleFolders();
+            statusMsg.textContent = "Восстановите расположение по памяти";
+            checkBtn.style.display = 'block';
+            setTimeout(() => { statusMsg.style.opacity = 0; }, 2000);
+        }, MEMORIZE_TIME);
+    }
+
+    function createGrid() {
+        const areaWidth = window.innerWidth;
+        const areaHeight = window.innerHeight - 160;
+        
+        const gridWidth = (GRID_COLS * SLOT_SIZE) + ((GRID_COLS - 1) * GAP);
+        const gridHeight = (GRID_ROWS * SLOT_SIZE) + ((GRID_ROWS - 1) * GAP);
+        
+        const startX = (areaWidth - gridWidth) / 2;
+        const startY = (areaHeight - gridHeight) / 2 + 40;
+
+        for (let r = 0; r < GRID_ROWS; r++) {
+            for (let c = 0; c < GRID_COLS; c++) {
+                const slot = document.createElement('div');
+                slot.classList.add('grid-slot');
+                slot.style.left = (startX + c * (SLOT_SIZE + GAP)) + 'px';
+                slot.style.top = (startY + r * (SLOT_SIZE + GAP)) + 'px';
+                
+                const centerX = startX + c * (SLOT_SIZE + GAP) + SLOT_SIZE/2;
+                const centerY = startY + r * (SLOT_SIZE + GAP) + SLOT_SIZE/2;
+                
+                // Сохраняем центральные точки ячеек
+                centerPoints.push({ x: centerX, y: centerY, filled: false });
+
+                // Создаём маркер центра (невидимый до проверки)
+                const centerPoint = document.createElement('div');
+                centerPoint.classList.add('center-point');
+                centerPoint.style.left = centerX + 'px';
+                centerPoint.style.top = centerY + 'px';
+                gameArea.appendChild(centerPoint);
+                
+                gameArea.appendChild(slot);
+                slots.push(slot);
+            }
+        }
+    }
+
+    function createFolders() {
+        for (let i = 0; i < FOLDER_COUNT; i++) {
+            const folder = document.createElement('div');
+            folder.classList.add('folder');
+            folder.id = `folder-${i}`;
+            
+            folder.innerHTML = getFolderSVG();
+
+            folder.addEventListener('mousedown', handleMouseDown);
+            
+            gameArea.appendChild(folder);
+            folders.push(folder);
+        }
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    function placeFoldersInGrid() {
+        for (let i = 0; i < FOLDER_COUNT; i++) {
+            if (centerPoints[i]) {
+                folders[i].style.left = centerPoints[i].x + 'px';
+                folders[i].style.top = centerPoints[i].y + 'px';
+                folders[i].style.position = 'absolute';
+                folders[i].classList.add('locked');
+            }
+        }
+    }
+
+    function hideGrid() {
+        slots.forEach(slot => slot.classList.add('hidden'));
+    }
+
+    function scrambleFolders() {
+        const areaWidth = gameArea.offsetWidth;
+        const areaHeight = gameArea.offsetHeight;
+        const padding = 100;
+
+        folders.forEach((folder, i) => {
+            let newX, newY;
+            do {
+                newX = Math.random() * (areaWidth - padding * 2) + padding;
+                newY = Math.random() * (areaHeight - padding * 2) + padding;
+            } while (
+                Math.abs(newX - centerPoints[i].x) < 250 && 
+                Math.abs(newY - centerPoints[i].y) < 250
+            );
+
+            folder.style.left = newX + 'px';
+            folder.style.top = newY + 'px';
+            folder.classList.remove('locked');
+        });
+    }
+
+    // --- СВОБОДНОЕ ПЕРЕТАСКИВАНИЕ ---
+
+    function handleMouseDown(e) {
+        if (this.classList.contains('locked')) return;
+        
+        isDragging = true;
+        currentFolder = this;
+        
+        const rect = this.getBoundingClientRect();
+        dragOffsetX = e.clientX - rect.left - rect.width / 2;
+        dragOffsetY = e.clientY - rect.top - rect.height / 2;
+        
+        this.classList.add('dragging');
+        
+        e.preventDefault();
+    }
+
+    function handleMouseMove(e) {
+        if (!isDragging || !currentFolder) return;
+        
+        const gameAreaRect = gameArea.getBoundingClientRect();
+        
+        let newX = e.clientX - gameAreaRect.left + dragOffsetX;
+        let newY = e.clientY - gameAreaRect.top + dragOffsetY;
+        
+        const padding = 50;
+        newX = Math.max(padding, Math.min(gameAreaRect.width - padding, newX));
+        newY = Math.max(padding, Math.min(gameAreaRect.height - padding, newY));
+        
+        currentFolder.style.left = newX + 'px';
+        currentFolder.style.top = newY + 'px';
+    }
+
+    function handleMouseUp(e) {
+        if (!isDragging || !currentFolder) return;
+        
+        currentFolder.classList.remove('dragging');
+        
+        isDragging = false;
+        currentFolder = null;
+    }
+
+    // --- Проверка результатов (ПО ЦЕНТРАЛЬНЫМ ТОЧКАМ) ---
+
+    function checkResults() {
+        checkBtn.style.display = 'none';
+        
+        folders.forEach(f => f.classList.add('locked'));
+
+        // Показываем центральные точки
+        document.querySelectorAll('.center-point').forEach(p => p.classList.add('visible'));
+
+        let totalError = 0;
+        let perfectMatches = 0;
+        let errors = [];
+
+        // Сбрасываем метки заполненности
+        centerPoints.forEach(cp => cp.filled = false);
+
+        // Для каждой папки ищем ближайшую свободную центральную точку
+        folders.forEach((folder, folderIndex) => {
+            const currentX = parseFloat(folder.style.left);
+            const currentY = parseFloat(folder.style.top);
+
+            // Находим ближайшую ещё не занятую центральную точку
+            let bestMatch = null;
+            let bestDistance = Infinity;
+
+            centerPoints.forEach((cp, cpIndex) => {
+                if (cp.filled) return;
+
+                const distance = Math.sqrt(
+                    Math.pow(currentX - cp.x, 2) + 
+                    Math.pow(currentY - cp.y, 2)
+                );
+
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestMatch = cp;
+                }
+            });
+
+            // Если нашли точку
+            if (bestMatch) {
+                bestMatch.filled = true;
+                
+                // Проверяем на идеальное совпадение
+                const isPerfect = bestDistance <= PERFECT_THRESHOLD;
+                if (isPerfect) perfectMatches++;
+
+                // Считаем ошибку в процентах (0px = 100%, 200px+ = 0%)
+                const accuracy = Math.max(0, 100 - (bestDistance / MAX_ERROR_DISTANCE * 100));
+                totalError += accuracy;
+
+                errors.push({
+                    folder: folderIndex + 1,
+                    distance: Math.round(bestDistance),
+                    accuracy: accuracy.toFixed(1),
+                    perfect: isPerfect
+                });
+
+                // Рисуем линию от центра к папке
+                const line = document.createElement('div');
+                line.classList.add('error-line');
+                
+                const angle = Math.atan2(currentY - bestMatch.y, currentX - bestMatch.x) * 180 / Math.PI;
+                const lineLength = Math.min(bestDistance, 200);
+                
+                line.style.width = lineLength + 'px';
+                line.style.left = bestMatch.x + 'px';
+                line.style.top = bestMatch.y + 'px';
+                line.style.transform = `rotate(${angle}deg)`;
+                line.style.background = isPerfect ? '#4cd964' : '#ff3b30';
+                line.style.opacity = '0.7';
+                
+                gameArea.appendChild(line);
+
+                setTimeout(() => {
+                    line.style.opacity = '1';
+                }, 100 + folderIndex * 100);
+            }
+        });
+
+        // Средняя точность
+        const avgAccuracy = totalError / FOLDER_COUNT;
+
+        setTimeout(() => {
+            showResults(avgAccuracy, errors, perfectMatches);
+        }, 1000);
+    }
+
+    function showResults(accuracy, errors, perfectMatches) {
+        resultsEl.style.display = 'block';
+        
+        const scoreCircle = document.getElementById('score-circle');
+        const scoreValue = document.getElementById('score-value');
+        
+        let currentScore = 0;
+        const interval = setInterval(() => {
+            currentScore += 2;
+            if (currentScore >= accuracy) {
+                currentScore = accuracy;
+                clearInterval(interval);
+            }
+            
+            scoreValue.textContent = Math.round(currentScore) + '/100';
+            scoreCircle.style.background = `conic-gradient(${getColorForScore(currentScore)} ${currentScore}%, #e5e5e5 ${currentScore}%)`;
+        }, 20);
+
+        const errorDetails = document.getElementById('error-details');
+        errorDetails.innerHTML = `
+            <p><strong>Папок:</strong> ${FOLDER_COUNT}</p>
+            <p><strong>Идеальных совпадений:</strong> ${perfectMatches} из ${FOLDER_COUNT}</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
+            <p><strong>Детально по папкам:</strong></p>
+            ${errors.map(e => `
+                <p style="color: ${e.perfect ? '#4cd964' : '#ff3b30'}">
+                    Папка ${e.folder}: отклонение ${e.distance}px (${e.accuracy}%)
+                    ${e.perfect ? ' ✓' : ''}
+                </p>
+            `).join('')}
+        `;
+    }
+
+    function getColorForScore(score) {
+        if (score >= 80) return '#4cd964';
+        if (score >= 50) return '#ffcc00';
+        return '#ff3b30';
+    }
+</script>
+</body>
+</html> 
