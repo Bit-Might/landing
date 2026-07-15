@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Терьертрис</title>
+    <style>
+        :root {
+            --bg-color: #05000a;
+            --text-color: #d0b0ff;
+            --accent-color: #9d4edd;
+            --canvas-bg: #7b2cbf; /* Сделали фон стакана еще светлее и ярче */
+            --danger-color: #ff0055;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* --- СТАРТОВЫЙ ЭКРАН (ОБЛОЖКА) --- */
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            background-image: url('cover.jpg');
+            background-size: contain; 
+            background-position: center center;
+            background-repeat: no-repeat;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        .btn-neon {
+            background: rgba(20, 0, 30, 0.95);
+            border: 2px solid var(--accent-color);
+            color: #fff;
+            font-weight: 900;
+            border-radius: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            box-shadow: 0 0 30px rgba(157, 78, 221, 0.8);
+            transition: all 0.3s ease;
+        }
+
+        .btn-neon:hover {
+            background: var(--accent-color);
+            box-shadow: 0 0 50px rgba(157, 78, 221, 1);
+            color: #fff;
+        }
+
+        .start-btn {
+            position: absolute;
+            top: 38%; 
+            left: 50%;
+            transform: translate(-50%, -50%); 
+            font-size: 28px;
+            padding: 15px 50px;
+            z-index: 1001;
+        }
+
+        .start-btn:hover {
+            transform: translate(-50%, -55%) scale(1.05); 
+        }
+
+        /* --- ИГРОВОЙ ИНТЕРФЕЙС --- */
+        .game-wrapper {
+            position: relative; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: rgba(20, 0, 30, 0.4);
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(123, 44, 191, 0.2);
+            border: 1px solid rgba(123, 44, 191, 0.3);
+            opacity: 0; 
+            transition: opacity 1s ease;
+            overflow: hidden; 
+        }
+
+        .game-wrapper.visible {
+            opacity: 1;
+        }
+
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .logo {
+            max-height: 30px;
+            filter: drop-shadow(0 0 10px var(--accent-color));
+            image-rendering: auto;
+        }
+
+        .score-board {
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px #c77dff;
+            background: rgba(157, 78, 221, 0.2);
+            padding: 5px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(157, 78, 221, 0.4);
+        }
+
+        canvas {
+            background-color: var(--canvas-bg);
+            border: 2px solid #5a189a;
+            border-radius: 4px;
+            box-shadow: 0 0 25px rgba(123, 44, 191, 0.5);
+            image-rendering: auto; 
+        }
+
+        .controls-hint {
+            margin-top: 15px;
+            font-size: 13px;
+            color: #7a5c99;
+            text-align: center;
+            letter-spacing: 1px;
+            line-height: 1.8;
+        }
+
+        kbd {
+            background: #240046;
+            color: #dfb6ff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid #5a189a;
+            font-family: monospace;
+        }
+
+        /* --- ОВЕРЛЕИ (ПАУЗА И GAME OVER) --- */
+        .overlay-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 0, 10, 0.9);
+            display: none; 
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+        }
+
+        .overlay-screen h2 {
+            font-size: 36px;
+            margin: 0 0 10px 0;
+            color: #fff;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+        }
+
+        #pause-screen h2 {
+            text-shadow: 0 0 20px var(--accent-color);
+        }
+
+        .overlay-screen p {
+            color: var(--text-color);
+            font-size: 16px;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+
+        .final-score-text {
+            font-size: 42px !important; 
+            font-weight: 900;
+            color: #fff !important;
+            margin-bottom: 40px !important;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px var(--danger-color), 0 0 40px var(--danger-color) !important; 
+        }
+
+        .restart-btn {
+            font-size: 20px;
+            padding: 12px 40px;
+        }
+        
+        .restart-btn:hover {
+            transform: scale(1.05);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <button class="btn-neon start-btn" id="start-btn">ИГРАТЬ</button>
+    </div>
+
+    <div class="game-wrapper" id="game-wrapper">
+        <div class="header">
+            <img src="title.png" alt="Терьертрис" class="logo" onerror="this.style.display='none';">
+            <div class="score-board">SCORE: <span id="score">0</span></div>
+        </div>
+        <canvas id="tetris" width="300" height="600"></canvas>
+        <div class="controls-hint">
+            <kbd>←</kbd> <kbd>↓</kbd> <kbd>→</kbd> Движение <br>
+            <kbd>↑</kbd> / <kbd>Space</kbd> Поворот &nbsp;|&nbsp; <kbd>Esc</kbd> Пауза
+        </div>
+
+        <!-- Экран паузы -->
+        <div class="overlay-screen" id="pause-screen">
+            <h2>ПАУЗА</h2>
+            <p>Нажмите <b>ESC</b> для продолжения</p>
+        </div>
+
+        <!-- Экран Game Over -->
+        <div class="overlay-screen" id="game-over-screen">
+            <p class="final-score-text">ИТОГ: <span id="final-score-val">0</span></p>
+            <button class="btn-neon restart-btn" id="restart-btn">ЕЩЕ</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('tetris');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const startScreen = document.getElementById('start-screen');
+        const gameWrapper = document.getElementById('game-wrapper');
+        const startBtn = document.getElementById('start-btn');
+        
+        const pauseScreen = document.getElementById('pause-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreVal = document.getElementById('final-score-val');
+        const restartBtn = document.getElementById('restart-btn');
+
+        const ROWS = 20;
+        const COLS = 10;
+        const BLOCK_SIZE = 30;
+
+        let score = 0;
+        let board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+        let gameStarted = false;
+        let isPaused = false; 
+        let isGameOver = false;
+
+        // --- МУЗЫКАЛЬНОЕ СОПРОВОЖДЕНИЕ ---
+        const themeAudio = new Audio('theme.mp3');
+        themeAudio.loop = true;
+        const playAudio = new Audio('play.mp3');
+        playAudio.loop = true;
+
+        // Эффект лая собаки
+        const barkAudio = new Audio('bark.mp3');
+
+        // Функция для воспроизведения лая с наложением (полифония)
+        function playBark() {
+            const clone = barkAudio.cloneNode();
+            clone.volume = 0.5; 
+            clone.play().catch(() => {});
+        }
+
+        // Обход блокировки автоплея
+        function startThemeOnInteraction() {
+            if (!gameStarted) {
+                themeAudio.play().catch(() => {});
+                document.removeEventListener('click', startThemeOnInteraction);
+                document.removeEventListener('keydown', startThemeOnInteraction);
+            }
+        }
+        document.addEventListener('click', startThemeOnInteraction);
+        document.addEventListener('keydown', startThemeOnInteraction);
+
+        const COLORS = [
+            null, '#e0aaff', '#c77dff', '#9d4edd', '#7b2cbf', '#5a189a', '#3c096c', '#dfb6ff'
+        ];
+
+        const USE_CUSTOM_IMAGES = true;
+        const customImages = {};
+        
+        if (USE_CUSTOM_IMAGES) {
+            const imageFiles = {
+                1: 'i.png', 2: 'j.png', 3: 'l.png', 4: 'o.png', 
+                5: 's.png', 6: 't.png', 7: 'z.png'
+            };
+            for (let id in imageFiles) {
+                const img = new Image();
+                img.src = imageFiles[id];
+                customImages[id] = img;
+            }
+        }
+
+        const SHAPES = [
+            [],
+            [[0,1,0,0], [0,1,0,0], [0,1,0,0], [0,1,0,0]], 
+            [[0,2,0], [0,2,0], [2,2,0]],                  
+            [[0,3,0], [0,3,0], [0,3,3]],                  
+            [[4,4], [4,4]],                               
+            [[0,5,5], [5,5,0], [0,0,0]],                  
+            [[6,6,6], [0,6,0], [0,0,0]],                  
+            [[7,7,0], [0,7,7], [0,0,0]]                   
+        ];
+
+        let piece = null;
+        let dropCounter = 0;
+        let dropInterval = 800;
+        let lastTime = 0;
+        let animationId;
+
+        function createPiece() {
+            const typeId = Math.floor(Math.random() * 7) + 1;
+            const shape = SHAPES[typeId];
+            
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+            
+            shape.forEach((row, y) => {
+                row.forEach((val, x) => {
+                    if (val !== 0) {
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                    }
+                });
+            });
+
+            const bWidth = maxX - minX + 1;
+            const bHeight = maxY - minY + 1;
+
+            const matrix = shape.map((row, y) => row.map((val, x) => {
+                if (val === 0) return null;
+                
+                let ovL = 0, ovR = 0, ovU = 0, ovD = 0;
+                const rx = x - minX;
+                const ry = y - minY;
+                
+                if (typeId === 2 && rx === 1 && ry === 0) ovL = 1; 
+                if (typeId === 2 && rx === 1 && ry === 1) ovL = 1; 
+                if (typeId === 3 && rx === 0 && ry === 0) ovR = 1; 
+                if (typeId === 3 && rx === 0 && ry === 1) ovR = 1; 
+                if (typeId === 5 && rx === 1 && ry === 0) ovL = 1;
+                if (typeId === 5 && rx === 1 && ry === 1) ovR = 1;
+                if (typeId === 6 && rx === 1 && ry === 1) { ovL = 1; ovR = 1; }
+                if (typeId === 7 && rx === 1 && ry === 0) ovR = 1;
+                if (typeId === 7 && rx === 1 && ry === 1) ovL = 1;
+
+                return {
+                    type: typeId, u: rx / bWidth, v: ry / bHeight, 
+                    bw: bWidth, bh: bHeight, ovL, ovR, ovU, ovD
+                };
+            }));
+
+            return {
+                matrix: matrix,
+                x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2),
+                y: 0,
+                rotation: 0 
+            };
+        }
+
+        function drawBlock(x, y, block, currentRotation = 0) {
+            const px = x * BLOCK_SIZE;
+            const py = y * BLOCK_SIZE;
+            const rot = block.rot !== undefined ? block.rot : currentRotation;
+
+            if (USE_CUSTOM_IMAGES && customImages[block.type] && customImages[block.type].complete) {
+                const img = customImages[block.type];
+                
+                ctx.save();
+                ctx.translate(px + BLOCK_SIZE / 2, py + BLOCK_SIZE / 2);
+                ctx.rotate(rot * Math.PI / 2);
+                
+                const sliceW = img.width / block.bw;
+                const sliceH = img.height / block.bh;
+                const sx = block.u * img.width;
+                const sy = block.v * img.height;
+                
+                const oL = block.ovL || 0;
+                const oR = block.ovR || 0;
+                const oU = block.ovU || 0;
+                const oD = block.ovD || 0;
+                
+                const drawSx = sx - oL * sliceW;
+                const drawSy = sy - oU * sliceH;
+                const drawSWidth = sliceW * (1 + oL + oR);
+                const drawSHeight = sliceH * (1 + oU + oD);
+                
+                const drawDx = -BLOCK_SIZE / 2 - oL * BLOCK_SIZE;
+                const drawDy = -BLOCK_SIZE / 2 - oU * BLOCK_SIZE;
+                const drawDWidth = BLOCK_SIZE * (1 + oL + oR);
+                const drawDHeight = BLOCK_SIZE * (1 + oU + oD);
+                
+                ctx.drawImage(img, drawSx, drawSy, drawSWidth, drawSHeight, drawDx, drawDy, drawDWidth, drawDHeight);
+                
+                // Легкая рамка поверх собак
+                ctx.strokeStyle = 'rgba(157, 78, 221, 0.2)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(-BLOCK_SIZE / 2, -BLOCK_SIZE / 2, BLOCK_SIZE, BLOCK_SIZE);
+                
+                ctx.restore();
+            } else {
+                ctx.fillStyle = COLORS[block.type];
+                ctx.fillRect(px, py, BLOCK_SIZE, BLOCK_SIZE);
+            }
+        }
+
+        function draw() {
+            // Динамически получаем фиолетовый цвет стакана из CSS
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim() || '#7b2cbf';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Черные линии для контраста
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+            for(let r = 0; r < ROWS; r++){
+                for(let c = 0; c < COLS; c++){
+                    ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                }
+            }
+
+            board.forEach((row, y) => {
+                row.forEach((block, x) => {
+                    if (block !== null) drawBlock(x, y, block);
+                });
+            });
+
+            if (piece) {
+                piece.matrix.forEach((row, y) => {
+                    row.forEach((block, x) => {
+                        if (block !== null) {
+                            drawBlock(piece.x + x, piece.y + y, block, piece.rotation);
+                        }
+                    });
+                });
+            }
+        }
+
+        function collide(board, piece) {
+            const m = piece.matrix;
+            for (let y = 0; y < m.length; ++y) {
+                for (let x = 0; x < m[y].length; ++x) {
+                    if (m[y][x] !== null) {
+                        if (!board[y + piece.y] || board[y + piece.y][x + piece.x] !== null) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function merge(board, piece) {
+            piece.matrix.forEach((row, y) => {
+                row.forEach((block, x) => {
+                    if (block !== null) {
+                        board[y + piece.y][x + piece.x] = {
+                            type: block.type, u: block.u, v: block.v,
+                            bw: block.bw, bh: block.bh, rot: piece.rotation,
+                            ovL: block.ovL, ovR: block.ovR, ovU: block.ovU, ovD: block.ovD
+                        };
+                    }
+                });
+            });
+        }
+
+        function rotateMatrix(matrix) {
+            for (let y = 0; y < matrix.length; ++y) {
+                for (let x = 0; x < y; ++x) {
+                    [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+                }
+            }
+            matrix.forEach(row => row.reverse());
+        }
+
+        function playerRotate() {
+            const pos = piece.x;
+            let offset = 1;
+            rotateMatrix(piece.matrix);
+            piece.rotation = (piece.rotation + 1) % 4; 
+            
+            while (collide(board, piece)) {
+                piece.x += offset;
+                offset = -(offset + (offset > 0 ? 1 : -1));
+                if (offset > piece.matrix[0].length) {
+                    rotateMatrix(piece.matrix);
+                    rotateMatrix(piece.matrix);
+                    rotateMatrix(piece.matrix);
+                    piece.rotation = (piece.rotation + 3) % 4; 
+                    piece.x = pos;
+                    return;
+                }
+            }
+        }
+
+        function playerMove(offset) {
+            piece.x += offset;
+            if (collide(board, piece)) piece.x -= offset;
+        }
+
+        function triggerGameOver() {
+            isGameOver = true;
+            cancelAnimationFrame(animationId);
+            finalScoreVal.innerText = score;
+            gameOverScreen.style.display = 'flex';
+
+            playAudio.pause();
+            playAudio.currentTime = 0;
+            themeAudio.play().catch(() => {});
+        }
+
+        function playerDrop() {
+            piece.y++;
+            if (collide(board, piece)) {
+                piece.y--;
+                merge(board, piece);
+                resetPiece();
+                clearLines();
+            }
+            dropCounter = 0;
+        }
+
+        function resetPiece() {
+            piece = createPiece();
+            if (collide(board, piece)) {
+                triggerGameOver();
+            }
+        }
+
+        function clearLines() {
+            let linesCleared = 0;
+            outer: for (let y = board.length - 1; y >= 0; --y) {
+                for (let x = 0; x < board[y].length; ++x) {
+                    if (board[y][x] === null) continue outer;
+                }
+                const row = board.splice(y, 1)[0].fill(null);
+                board.unshift(row);
+                ++y;
+                linesCleared++;
+            }
+            
+            if (linesCleared > 0) {
+                playBark();
+
+                const points = [0, 100, 300, 500, 800];
+                score += points[linesCleared];
+                updateScore();
+                dropInterval = Math.max(200, 800 - Math.floor(score / 500) * 50);
+            }
+        }
+
+        function updateScore() {
+            scoreElement.innerText = score;
+        }
+
+        function togglePause() {
+            if (isGameOver) return; 
+            
+            isPaused = !isPaused;
+            if (isPaused) {
+                pauseScreen.style.display = 'flex';
+                cancelAnimationFrame(animationId); 
+
+                playAudio.pause();
+                themeAudio.play().catch(() => {});
+            } else {
+                pauseScreen.style.display = 'none';
+                lastTime = performance.now(); 
+                update(lastTime); 
+
+                themeAudio.pause();
+                themeAudio.currentTime = 0;
+                playAudio.play().catch(() => {});
+            }
+        }
+
+        function update(time = 0) {
+            if (!gameStarted || isGameOver) return;
+
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            dropCounter += deltaTime;
+            if (dropCounter > dropInterval) playerDrop();
+
+            draw();
+            animationId = requestAnimationFrame(update);
+        }
+
+        document.addEventListener('keydown', event => {
+            if (!gameStarted || isGameOver) return; 
+
+            if (event.code === 'Escape') {
+                togglePause();
+                return;
+            }
+
+            if (isPaused) return;
+
+            if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', 'Space'].includes(event.code)) {
+                event.preventDefault();
+            }
+
+            if (event.code === 'ArrowLeft') playerMove(-1);
+            else if (event.code === 'ArrowRight') playerMove(1);
+            else if (event.code === 'ArrowDown') playerDrop();
+            else if (event.code === 'Space' || event.code === 'ArrowUp') playerRotate();
+        });
+
+        startBtn.addEventListener('click', () => {
+            playBark();
+
+            startScreen.style.opacity = '0';
+            setTimeout(() => {
+                startScreen.style.display = 'none';
+            }, 500);
+
+            gameWrapper.classList.add('visible');
+            
+            board.forEach(row => row.fill(null));
+            score = 0;
+            updateScore();
+            resetPiece();
+            
+            gameStarted = true;
+            lastTime = performance.now();
+
+            themeAudio.pause();
+            themeAudio.currentTime = 0;
+            playAudio.play().catch(() => {});
+
+            update(lastTime);
+        });
+
+        restartBtn.addEventListener('click', () => {
+            playBark();
+
+            gameOverScreen.style.display = 'none';
+            
+            board.forEach(row => row.fill(null));
+            score = 0;
+            dropInterval = 800;
+            updateScore();
+            
+            isGameOver = false;
+            resetPiece();
+            
+            lastTime = performance.now();
+
+            themeAudio.pause();
+            themeAudio.currentTime = 0;
+            playAudio.currentTime = 0;
+            playAudio.play().catch(() => {});
+
+            update(lastTime);
+        });
+
+    </script>
+</body>
+</html>
