@@ -4,6 +4,7 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>БитМайт.</title>
+        <link rel="icon" type="image/png" href="favicon.png">
         <style>
             /* Базовые настройки и цвета */
             :root {
@@ -42,11 +43,6 @@
                 flex-direction: column;
             }
 
-            /*
-          ОБНОВЛЕНИЕ 1: Шапка (Header)
-          Теперь использует ту же сетку (1fr 300px), что и нижний блок,
-          чтобы ширина кнопки 100% совпадала с шириной правого сайдбара.
-        */
             .header {
                 display: grid;
                 grid-template-columns: 1fr 300px; /* Кнопка строго 300px */
@@ -70,11 +66,6 @@
                 cursor: pointer;
             }
 
-            /*
-          ОБНОВЛЕНИЕ 2: Навигация (Ссылки)
-          flex-grow: 1 растягивает блок на всю оставшуюся ширину
-          space-evenly создает идеально равные отступы (justified)
-        */
             .nav {
                 display: flex;
                 flex-grow: 1;
