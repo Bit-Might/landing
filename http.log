@@ -1,5 +1,0 @@
-::1 - - [18/Jul/2026 12:25:00] "GET /index.html HTTP/1.1" 200 -
-::1 - - [18/Jul/2026 12:25:00] "GET /assets/game2.png HTTP/1.1" 200 -
-::1 - - [18/Jul/2026 12:25:00] "GET /assets/game1.png HTTP/1.1" 200 -
-::1 - - [18/Jul/2026 12:25:01] "GET /assets/coming_soon.svg HTTP/1.1" 200 -
-::1 - - [18/Jul/2026 12:25:01] "GET /favicon.png HTTP/1.1" 200 -
