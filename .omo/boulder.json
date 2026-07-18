@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "active_work_id": "fix-logo-inline-d102ddd0",
+  "works": {
+    "fix-logo-inline-d102ddd0": {
+      "work_id": "fix-logo-inline-d102ddd0",
+      "active_plan": "/Users/ta-nu-ki/Documents/Projects/landing/.omo/plans/fix-logo-inline.md",
+      "plan_name": "fix-logo-inline",
+      "status": "active",
+      "started_at": "2026-07-18T09:19:31.314Z",
+      "updated_at": "2026-07-18T09:23:10.374Z",
+      "session_ids": [
+        "opencode:ses_08baf4fc7ffe75ToCp6g2NYQEI",
+        "opencode:ses_08b77c92fffecXmUvbK7W55JIk",
+        "opencode:ses_08b77a8ffffeORtaoILVQj8pam",
+        "opencode:ses_08b76b1cdffesMfpjRS235iS2K",
+        "opencode:ses_08b7696c7ffezcwyM4c55ZGTcK"
+      ],
+      "session_origins": {
+        "opencode:ses_08baf4fc7ffe75ToCp6g2NYQEI": "direct",
+        "opencode:ses_08b77c92fffecXmUvbK7W55JIk": "appended",
+        "opencode:ses_08b77a8ffffeORtaoILVQj8pam": "appended",
+        "opencode:ses_08b76b1cdffesMfpjRS235iS2K": "appended",
+        "opencode:ses_08b7696c7ffezcwyM4c55ZGTcK": "appended"
+      },
+      "agent": "atlas",
+      "task_sessions": {}
+    }
+  },
+  "active_plan": "/Users/ta-nu-ki/Documents/Projects/landing/.omo/plans/fix-logo-inline.md",
+  "started_at": "2026-07-18T09:19:31.314Z",
+  "status": "active",
+  "updated_at": "2026-07-18T09:23:10.374Z",
+  "session_ids": [
+    "opencode:ses_08baf4fc7ffe75ToCp6g2NYQEI",
+    "opencode:ses_08b77c92fffecXmUvbK7W55JIk",
+    "opencode:ses_08b77a8ffffeORtaoILVQj8pam",
+    "opencode:ses_08b76b1cdffesMfpjRS235iS2K",
+    "opencode:ses_08b7696c7ffezcwyM4c55ZGTcK"
+  ],
+  "session_origins": {
+    "opencode:ses_08baf4fc7ffe75ToCp6g2NYQEI": "direct",
+    "opencode:ses_08b77c92fffecXmUvbK7W55JIk": "appended",
+    "opencode:ses_08b77a8ffffeORtaoILVQj8pam": "appended",
+    "opencode:ses_08b76b1cdffesMfpjRS235iS2K": "appended",
+    "opencode:ses_08b7696c7ffezcwyM4c55ZGTcK": "appended"
+  },
+  "plan_name": "fix-logo-inline",
+  "task_sessions": {},
+  "agent": "atlas"
+}
