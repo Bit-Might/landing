@@ -276,7 +276,7 @@
             background-image: url('result_back.svg');
             background-repeat: no-repeat;
             background-size: cover;
-            padding: 60px 65px;
+            padding: 150px 65px;
             text-align: center;
             z-index: 3000;
             display: none;
@@ -347,6 +347,7 @@
             cursor: pointer;
             transition: 0.2s;
             z-index: 3001;
+            margin-bottom: 50px;
         }
         #next-btn:hover { transform: translate(-50%, -50%) scale(1.05); }
 
