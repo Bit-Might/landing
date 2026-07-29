@@ -331,6 +331,8 @@
             margin-bottom: 20px;
             font-size: 14px;
             color: #333;
+            max-height: 200px;
+            overflow-y: auto;
         }
 
         .error-details p {

@@ -266,6 +266,16 @@
                 line-height: 1.5;
             }
 
+            .error-message {
+                padding: 20px;
+                background-color: #ff4d4d;
+                color: white;
+                margin-top: 20px;
+                border: 1px solid white;
+                text-align: center;
+                font-weight: bold;
+            }
+
             /* Адаптивность для мобильных устройств */
             @media (max-width: 1000px) {
                 .games-grid {

@@ -199,12 +199,20 @@
                     видеоигр в различных жанрах и с акцентом на геймификацию
                     жизненных наблюдений Авторы: Иван Майт linker_Hund
                 </div>
+                <div id="error-message" class="error-message" style="display: none;"></div>
             </div>
         </div>
         <script>
             const gameCards = document.querySelectorAll(".game-card");
             const descriptionDiv = document.getElementById("game-description");
             const originalText = descriptionDiv.innerHTML;
+            const errorDiv = document.getElementById("error-message");
+
+            function showError(message) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = "block";
+                errorDiv.scrollIntoView({ behavior: "smooth" });
+            }
 
             gameCards.forEach((card) => {
                 card.addEventListener("mouseenter", () => {
