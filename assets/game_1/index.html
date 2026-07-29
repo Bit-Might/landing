@@ -35,7 +35,7 @@
     <div id="start-btn"><img src="start.svg"></div>
 
     <!-- Кнопка проверки -->
-    <div id="check-btn"><img src="check.svg"></div>
+    <div><img id="check-btn" src="check_button.png"></div>
 
     <!-- Игровая область -->
     <div id="game-area"></div>
@@ -46,7 +46,7 @@
             <span class="score-value" id="score-value">0%</span>
         <div class="score-label">ТОЧНОСТЬ ПОЗИЦИОНИРОВАНИЯ</div>
         <div class="error-details" id="error-details"></div>
-        <div id="next-btn"><img src="start.svg"></div> 
+        <div><img id="next-btn" src="next_level.png"></div>
     </div>
 
     <!-- Экран победы -->
@@ -65,7 +65,7 @@
             splash.style.display = 'none';
         }, 800);
     }
-    
+
     // Конфигурация
     const SLOT_SIZE = 100;
     const GAP = 20;
@@ -79,7 +79,7 @@
       { folders: 24, cols: 6, rows: 4, memorizeTime: 5000 },
     ];
     let currentLevel = 0;
-    
+
     function getLevel() { return LEVELS[currentLevel]; }
 
     const gameArea = document.getElementById('game-area');
@@ -89,7 +89,7 @@
     const nextBtn = document.getElementById('next-btn');
     const timerBar = document.getElementById('timer-bar');
     const resultsEl = document.getElementById('results');
-    
+
     let slots = [];
     let folders = [];
     let centerPoints = []; // Центральные точки ячеек
@@ -684,11 +684,11 @@
         centerPoints = [];
         createGrid();
         createFolders();
-        
+
         placeFoldersInGrid();
         statusMsg.style.opacity = 1;
         statusMsg.textContent = "Запомните расположение по сетке...";
-        
+
         timerBar.style.width = '0%';
         setTimeout(() => { timerBar.style.width = '100%'; }, 10);
         setTimeout(() => { timerBar.style.width = '0%'; }, getLevel().memorizeTime);
@@ -706,10 +706,10 @@
     function createGrid() {
         const areaWidth = window.innerWidth;
         const areaHeight = window.innerHeight - 160;
-        
+
         const gridWidth = (getLevel().cols * SLOT_SIZE) + ((getLevel().cols - 1) * GAP);
         const gridHeight = (getLevel().rows * SLOT_SIZE) + ((getLevel().rows - 1) * GAP);
-        
+
         const startX = (areaWidth - gridWidth) / 2;
         const startY = (areaHeight - gridHeight) / 2 + 40;
 
@@ -719,10 +719,10 @@
                 slot.classList.add('grid-slot');
                 slot.style.left = (startX + c * (SLOT_SIZE + GAP)) + 'px';
                 slot.style.top = (startY + r * (SLOT_SIZE + GAP)) + 'px';
-                
+
                 const centerX = startX + c * (SLOT_SIZE + GAP) + SLOT_SIZE/2;
                 const centerY = startY + r * (SLOT_SIZE + GAP) + SLOT_SIZE/2;
-                
+
                 // Сохраняем центральные точки ячеек
                 centerPoints.push({ x: centerX, y: centerY, filled: false });
 
@@ -732,7 +732,7 @@
                 centerPoint.style.left = centerX + 'px';
                 centerPoint.style.top = centerY + 'px';
                 gameArea.appendChild(centerPoint);
-                
+
                 gameArea.appendChild(slot);
                 slots.push(slot);
             }
@@ -744,11 +744,11 @@
             const folder = document.createElement('div');
             folder.classList.add('folder');
             folder.id = `folder-${i}`;
-            
+
             folder.innerHTML = getFolderSVG();
 
             folder.addEventListener('mousedown', handleMouseDown);
-            
+
             gameArea.appendChild(folder);
             folders.push(folder);
         }
@@ -783,7 +783,7 @@
                 newX = Math.random() * (areaWidth - padding * 2) + padding;
                 newY = Math.random() * (areaHeight - padding * 2) + padding;
             } while (
-                Math.abs(newX - centerPoints[i].x) < 250 && 
+                Math.abs(newX - centerPoints[i].x) < 250 &&
                 Math.abs(newY - centerPoints[i].y) < 250
             );
 
@@ -797,40 +797,40 @@
 
     function handleMouseDown(e) {
         if (this.classList.contains('locked')) return;
-        
+
         isDragging = true;
         currentFolder = this;
-        
+
         const rect = this.getBoundingClientRect();
         dragOffsetX = e.clientX - rect.left - rect.width / 2;
         dragOffsetY = e.clientY - rect.top - rect.height / 2;
-        
+
         this.classList.add('dragging');
-        
+
         e.preventDefault();
     }
 
     function handleMouseMove(e) {
         if (!isDragging || !currentFolder) return;
-        
+
         const gameAreaRect = gameArea.getBoundingClientRect();
-        
+
         let newX = e.clientX - gameAreaRect.left + dragOffsetX;
         let newY = e.clientY - gameAreaRect.top + dragOffsetY;
-        
+
         const padding = 50;
         newX = Math.max(padding, Math.min(gameAreaRect.width - padding, newX));
         newY = Math.max(padding, Math.min(gameAreaRect.height - padding, newY));
-        
+
         currentFolder.style.left = newX + 'px';
         currentFolder.style.top = newY + 'px';
     }
 
     function handleMouseUp(e) {
         if (!isDragging || !currentFolder) return;
-        
+
         currentFolder.classList.remove('dragging');
-        
+
         isDragging = false;
         currentFolder = null;
     }
@@ -839,7 +839,7 @@
 
     function checkResults() {
         checkBtn.style.display = 'none';
-        
+
         folders.forEach(f => f.classList.add('locked'));
 
         // Показываем центральные точки
@@ -865,7 +865,7 @@
                 if (cp.filled) return;
 
                 const distance = Math.sqrt(
-                    Math.pow(currentX - cp.x, 2) + 
+                    Math.pow(currentX - cp.x, 2) +
                     Math.pow(currentY - cp.y, 2)
                 );
 
@@ -878,7 +878,7 @@
             // Если нашли точку
             if (bestMatch) {
                 bestMatch.filled = true;
-                
+
                 // Проверяем на идеальное совпадение
                 const isPerfect = bestDistance <= PERFECT_THRESHOLD;
                 if (isPerfect) perfectMatches++;
@@ -897,17 +897,17 @@
                 // Рисуем линию от центра к папке
                 const line = document.createElement('div');
                 line.classList.add('error-line');
-                
+
                 const angle = Math.atan2(currentY - bestMatch.y, currentX - bestMatch.x) * 180 / Math.PI;
                 const lineLength = Math.min(bestDistance, 200);
-                
+
                 line.style.width = lineLength + 'px';
                 line.style.left = bestMatch.x + 'px';
                 line.style.top = bestMatch.y + 'px';
                 line.style.transform = `rotate(${angle}deg)`;
                 line.style.background = isPerfect ? '#4cd964' : '#ff3b30';
                 line.style.opacity = '0.7';
-                
+
                 gameArea.appendChild(line);
 
                 setTimeout(() => {
@@ -929,10 +929,10 @@
         resultsEl.style.display = 'block';
         nextBtn.querySelector('img').src = 'start.svg';
         nextBtn.style.display = 'block';
-        
+
         const scoreCircle = document.getElementById('score-circle');
         const scoreValue = document.getElementById('score-value');
-        
+
         let currentScore = 0;
         const interval = setInterval(() => {
             currentScore += 2;
@@ -940,7 +940,7 @@
                 currentScore = accuracy;
                 clearInterval(interval);
             }
-            
+
             scoreValue.textContent = Math.round(currentScore) + '/100';
             scoreCircle.style.background = `conic-gradient(${getColorForScore(currentScore)} ${currentScore}%, #e5e5e5 ${currentScore}%)`;
         }, 20);
@@ -967,4 +967,4 @@
     }
 </script>
 </body>
-</html> 
+</html>

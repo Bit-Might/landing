@@ -91,7 +91,7 @@
 
         .menu-left span { margin-right: 15px; cursor: default; }
         .bold { font-weight: 700; }
-        
+
         /* --- ДОК --- */
         .dock-container {
             position: absolute;
@@ -182,14 +182,14 @@
             transform: translate(-50%, -50%);
         }
 
-        .folder:active { 
-            cursor: grabbing; 
+        .folder:active {
+            cursor: grabbing;
             transform: translate(-50%, -50%) scale(1.15);
             z-index: 1000;
         }
-        
-        .folder.locked { 
-            pointer-events: none; 
+
+        .folder.locked {
+            pointer-events: none;
             opacity: 0.7;
             cursor: default;
         }
@@ -197,7 +197,7 @@
         .folder.dragging {
             transition: none;
         }
-        
+
         .folder-svg {
             width: 70px; height: 70px;
             filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
@@ -275,7 +275,7 @@
             transform: translate(-50%, -50%);
             background-image: url('result_back.svg');
             background-repeat: no-repeat;
-            background-size: cover; 
+            background-size: cover;
             padding: 60px 65px;
             text-align: center;
             z-index: 3000;
