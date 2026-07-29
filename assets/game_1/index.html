@@ -43,7 +43,7 @@
     <!-- Результаты -->
     <div id="results">
         <h2>РЕЗУЛЬТАТ</h2>
-            <span class="score-value" id="score-value">0%</span>
+            <div id="score-circle"><span class="score-value" id="score-value">0%</span></div>
         <div class="score-label">ТОЧНОСТЬ ПОЗИЦИОНИРОВАНИЯ</div>
         <div class="error-details" id="error-details"></div>
         <div><img id="next-btn" src="next_level.png"></div>
@@ -927,7 +927,7 @@
     function showResults(accuracy, errors, perfectMatches) {
         document.getElementById('victory-screen').style.display = 'none';
         resultsEl.style.display = 'block';
-        nextBtn.querySelector('img').src = 'start.svg';
+        nextBtn.src = 'start.svg';
         nextBtn.style.display = 'block';
 
         const scoreCircle = document.getElementById('score-circle');

@@ -271,12 +271,12 @@
             font-family: 'PixelFont', sans-serif;
             position: absolute;
             top: 50%;
-            left: 16%;
+            left: 20%;
             transform: translate(-50%, -50%);
             background-image: url('result_back.svg');
             background-repeat: no-repeat;
             background-size: cover;
-            padding: 150px 65px;
+            padding: 150px 100px;
             text-align: center;
             z-index: 3000;
             display: none;
