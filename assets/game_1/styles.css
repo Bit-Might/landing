@@ -276,7 +276,7 @@
             background-image: url('result_back.svg');
             background-repeat: no-repeat;
             background-size: cover;
-            padding: 150px 100px;
+            padding: 100px 120px;
             text-align: center;
             z-index: 3000;
             display: none;
@@ -407,4 +407,11 @@
             width: 0%;
             transition: width 0.1s linear;
             z-index: 1600;
+        }
+
+        #achievement-img {
+            display: none;
+            width: 125px;
+            height: 125px;
+            margin: 0 auto 20px;
         }

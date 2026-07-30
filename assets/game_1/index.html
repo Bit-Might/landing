@@ -42,6 +42,7 @@
 
     <!-- Результаты -->
     <div id="results">
+        <img id="achievement-img" src="" alt="Achievement">
         <h2>РЕЗУЛЬТАТ</h2>
             <div id="score-circle"><span class="score-value" id="score-value">0%</span></div>
         <div class="score-label">ТОЧНОСТЬ ПОЗИЦИОНИРОВАНИЯ</div>
@@ -941,6 +942,21 @@
         const scoreValue = document.getElementById('score-value');
 
         let currentScore = 0;
+
+        const achievementImg = document.getElementById('achievement-img');
+        achievementImg.style.display = 'none';
+
+        if (accuracy === 100) {
+            achievementImg.src = 'achi3.png';
+            achievementImg.style.display = 'block';
+        } else if (accuracy > 90) {
+            achievementImg.src = 'achi2.png';
+            achievementImg.style.display = 'block';
+        } else if (accuracy > 50) {
+            achievementImg.src = 'achi1.png';
+            achievementImg.style.display = 'block';
+        }
+
         const interval = setInterval(() => {
             currentScore += 2;
             if (currentScore >= accuracy) {
