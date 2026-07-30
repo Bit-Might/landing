@@ -46,7 +46,7 @@
             <div id="score-circle"><span class="score-value" id="score-value">0%</span></div>
         <div class="score-label">ТОЧНОСТЬ ПОЗИЦИОНИРОВАНИЯ</div>
         <div class="error-details" id="error-details"></div>
-        <div><img id="next-btn" src="next_level.png"></div>
+        <div id="results-actions"><img id="restart-level-btn" src="restart.svg" alt="Restart Level"><img id="next-btn" src="next_level.png" alt="Next Level"></div>
     </div>
 
     <!-- Экран победы -->
@@ -142,6 +142,13 @@
     const playAgainBtn = document.getElementById('play-again-btn');
     playAgainBtn.addEventListener('click', function() {
         location.reload();
+    });
+
+    const restartBtn = document.getElementById('restart-level-btn');
+
+    restartBtn.addEventListener('click', function() {
+        resultsEl.style.display = 'none';
+        startGame();
     });
 
     // SVG папки
@@ -927,7 +934,7 @@
     function showResults(accuracy, errors, perfectMatches) {
         document.getElementById('victory-screen').style.display = 'none';
         resultsEl.style.display = 'block';
-        nextBtn.src = 'start.svg';
+        nextBtn.src = 'next_level.png';
         nextBtn.style.display = 'block';
 
         const scoreCircle = document.getElementById('score-circle');

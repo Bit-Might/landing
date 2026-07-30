@@ -339,19 +339,30 @@
             margin: 5px 0;
         }
 
-        #next-btn {
-            width: 150px;
+        #results-actions {
             position: absolute;
-            bottom: 0px;
+            bottom: 50px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            border: none;
-            cursor: pointer;
-            transition: 0.2s;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 30px;
             z-index: 3001;
-            margin-bottom: 50px;
         }
-        #next-btn:hover { transform: translate(-50%, -50%) scale(1.05); }
+
+        #results-actions img {
+            width: 150px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        #results-actions img#restart-level-btn {
+            width: 185px;
+        }
+
+        #results-actions img:hover {
+            transform: scale(1.05);
+        }
 
         #victory-screen {
             font-family: 'PixelFont', sans-serif;
