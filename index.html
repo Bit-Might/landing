@@ -225,5 +225,52 @@
                 });
             });
         </script>
+        <script>
+            let originalMainContent = document.querySelector(".main-content").innerHTML;
+
+            function loadGame(url) {
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.statusText);
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        const mainContent = document.querySelector(".main-content");
+                        const backButtonHtml = '<button id="back-button">Back</button>';
+                        mainContent.innerHTML = backButtonHtml + html;
+                        document.getElementById("back-button").addEventListener("click", () => {
+                            history.back();
+                        });
+                    })
+                    .catch(error => {
+                        console.error('There was a problem with the fetch operation:', error);
+                    });
+            }
+
+            document.querySelectorAll(".game-card").forEach(card => {
+                card.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    const url = card.getAttribute("href");
+                    loadGame(url);
+                    history.pushState({ gameUrl: url }, "", `#${url.split("/")[1]}`);
+                });
+            });
+
+            window.onpopstate = (event) => {
+                if (event.state && event.state.gameUrl) {
+                    loadGame(event.state.gameUrl);
+                } else {
+                    document.querySelector(".main-content").innerHTML = originalMainContent;
+                }
+            };
+
+            // Initial load
+            if (window.location.hash) {
+                const gameUrl = `assets/${window.location.hash.substring(1)}/index.html`;
+                loadGame(gameUrl);
+            }
+        </script>
     </body>
 </html>
