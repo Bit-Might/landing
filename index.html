@@ -204,10 +204,10 @@
             </div>
         </div>
         <script>
+            const gameCards = document.querySelectorAll(".game-card");
             const descriptionDiv = document.getElementById("game-description");
             const originalText = descriptionDiv.innerHTML;
             const errorDiv = document.getElementById("error-message");
-            let originalMainContent = document.querySelector(".main-content").innerHTML;
 
             function showError(message) {
                 errorDiv.textContent = message;
@@ -215,76 +215,15 @@
                 errorDiv.scrollIntoView({ behavior: "smooth" });
             }
 
-            function attachGameCardListeners() {
-                const gameCards = document.querySelectorAll(".game-card");
-                gameCards.forEach((card) => {
-                    card.addEventListener("mouseenter", () => {
-                        descriptionDiv.innerHTML =
-                            card.getAttribute("data-description");
-                    });
-                    card.addEventListener("mouseleave", () => {
-                        descriptionDiv.innerHTML = originalText;
-                    });
-                    card.addEventListener("click", (event) => {
-                        event.preventDefault();
-                        const url = card.getAttribute("href");
-                        loadGame(url);
-                        history.pushState({ gameUrl: url }, "", `#${url.split("/")[1]}`);
-                    });
+            gameCards.forEach((card) => {
+                card.addEventListener("mouseenter", () => {
+                    descriptionDiv.innerHTML =
+                        card.getAttribute("data-description");
                 });
-            }
-
-            function loadGame(url) {
-                fetch(url)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok: ' + response.statusText);
-                        }
-                        return response.text();
-                    })
-                    .then(html => {
-                        const basePath = url.substring(0, url.lastIndexOf('/') + 1);
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = html;
-                        const elements = tempDiv.querySelectorAll('[src], [href]');
-                        elements.forEach(el => {
-                            ['src', 'href'].forEach(attr => {
-                                if (el.hasAttribute(attr)) {
-                                    const val = el.getAttribute(attr);
-                                    if (!val.startsWith('http') && !val.startsWith('/') && !val.startsWith('data:')) {
-                                        el.setAttribute(attr, basePath + val);
-                                    }
-                                }
-                            });
-                        });
-                        const mainContent = document.querySelector(".main-content");
-                        const backButtonHtml = '<button id="back-button">Back</button>';
-                        mainContent.innerHTML = backButtonHtml + tempDiv.innerHTML;
-                        document.getElementById("back-button").addEventListener("click", () => {
-                            history.back();
-                        });
-                    })
-                    .catch(error => {
-                        console.error('There was a problem with the fetch operation:', error);
-                    });
-            }
-
-            attachGameCardListeners();
-
-            window.onpopstate = (event) => {
-                if (event.state && event.state.gameUrl) {
-                    loadGame(event.state.gameUrl);
-                } else {
-                    document.querySelector(".main-content").innerHTML = originalMainContent;
-                    attachGameCardListeners();
-                }
-            };
-
-            // Initial load
-            if (window.location.hash) {
-                const gameUrl = `assets/${window.location.hash.substring(1)}/index.html`;
-                loadGame(gameUrl);
-            }
+                card.addEventListener("mouseleave", () => {
+                    descriptionDiv.innerHTML = originalText;
+                });
+            });
         </script>
     </body>
 </html>
