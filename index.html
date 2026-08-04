@@ -231,6 +231,7 @@
             function loadGame(url) {
                 const mainContent = document.querySelector(".main-content");
                 mainContent.innerHTML = ''; // Clear previous content
+                mainContent.style.display = 'block';
 
                 const iframe = document.createElement('iframe');
                 iframe.src = url;
@@ -245,13 +246,7 @@
                     mainContent.innerHTML = originalMainContent;
                 };
 
-                const backButtonHtml = '<button id="back-button">Back</button>';
-                mainContent.innerHTML = backButtonHtml; // Add back button first
                 mainContent.appendChild(iframe); // Then append the iframe
-
-                document.getElementById("back-button").addEventListener("click", () => {
-                    history.back();
-                });
             }
 
             document.querySelectorAll(".game-card").forEach(card => {
@@ -268,6 +263,7 @@
                     loadGame(event.state.gameUrl);
                 } else {
                     document.querySelector(".main-content").innerHTML = originalMainContent;
+                    document.querySelector(".main-content").style.display = 'grid';
                 }
             };
 
