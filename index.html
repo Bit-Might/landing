@@ -229,48 +229,29 @@
             let originalMainContent = document.querySelector(".main-content").innerHTML;
 
             function loadGame(url) {
-                fetch(url)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok: ' + response.statusText);
-                        }
-                        return response.text();
-                    })
-                    .then(html => {
-                        // 1. Get the base path of the game from the url parameter
-                        const basePath = url.substring(0, url.lastIndexOf('/') + 1);
+                const mainContent = document.querySelector(".main-content");
+                mainContent.innerHTML = ''; // Clear previous content
 
-                        // 2. Create a temporary DOM element and set its innerHTML
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = html;
+                const iframe = document.createElement('iframe');
+                iframe.src = url;
+                iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+                iframe.style.width = '100%';
+                iframe.style.height = '100vh'; // Take full viewport height
+                iframe.style.border = 'none';
 
-                        // 3. Find all elements with src or href attributes
-                        const elements = tempDiv.querySelectorAll('[src], [href]');
+                iframe.onerror = () => {
+                    showError(`Failed to load game from ${url}. Please check the URL and try again.`);
+                    // Optionally, revert to original content or show a placeholder
+                    mainContent.innerHTML = originalMainContent;
+                };
 
-                        // 4. & 5. For each element, rewrite relative paths
-                        elements.forEach(el => {
-                            ['src', 'href'].forEach(attr => {
-                                if (el.hasAttribute(attr)) {
-                                    const val = el.getAttribute(attr);
-                                    // If the path is relative (doesn't start with http, https, /, or data:)
-                                    if (!val.startsWith('http') && !val.startsWith('/') && !val.startsWith('data:')) {
-                                        el.setAttribute(attr, basePath + val);
-                                    }
-                                }
-                            });
-                        });
+                const backButtonHtml = '<button id="back-button">Back</button>';
+                mainContent.innerHTML = backButtonHtml; // Add back button first
+                mainContent.appendChild(iframe); // Then append the iframe
 
-                        // 6. Update the innerHTML of the mainContent
-                        const mainContent = document.querySelector(".main-content");
-                        const backButtonHtml = '<button id="back-button">Back</button>';
-                        mainContent.innerHTML = backButtonHtml + tempDiv.innerHTML;
-                        document.getElementById("back-button").addEventListener("click", () => {
-                            history.back();
-                        });
-                    })
-                    .catch(error => {
-                        console.error('There was a problem with the fetch operation:', error);
-                    });
+                document.getElementById("back-button").addEventListener("click", () => {
+                    history.back();
+                });
             }
 
             document.querySelectorAll(".game-card").forEach(card => {
