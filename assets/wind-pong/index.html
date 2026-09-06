@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ВИНД-ПОНГ</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="stage">
+<img id="bg" alt="Халхин-Понг" src="assets/background.png" />
+<img id="compass" alt="Компас" src="assets/compass.png" />
+<canvas id="game"></canvas>
+<div class="score-display" id="scoreBadge">
+  <span class="score-label">СЧЁТ:</span>
+  <span class="score-value" id="scoreValue">0</span>
+</div>
+<div class="wind-panel" id="windPanel" aria-live="polite">
+  <div class="wind-label">ДУЮЩИЙ ВЕТЕР</div>
+  <div class="wind-name"><span id="windName">Загрузка…</span><span class="wind-arrow" id="windArrow"></span></div>
+  <div class="wind-description" id="windDescription"></div>
+</div>
+<div class="intro-overlay" id="introOverlay">
+  <img class="intro-bg" src="assets/intro-background.png" alt="" />
+  <img id="introGif" src="assets/intro.gif" alt="" />
+  <button class="intro-start" id="introStart" type="button" aria-label="Начать игру"></button>
+</div>
+</div>
+<audio id="bgm" src="assets/soundtrack.mp3" loop preload="auto"></audio>
+<script src="assets/winds-data.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
