@@ -1,3 +1,5 @@
+
+Game · JS
 (()=>{
 const W=1280,H=714;
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
@@ -7,7 +9,7 @@ const windDescription=document.getElementById('windDescription');
 const stage=document.querySelector('.stage');
 const dpr=Math.max(1,Math.min(2,devicePixelRatio||1));
 canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
-
+ 
 const field={left:438,right:848,top:213,bottom:507};
 const PADDLE_START_H=70, PADDLE_MIN_H=18, PADDLE_SHRINK=7;
 const target={x:800,w:12,h:PADDLE_START_H,minY:228,maxY:448};
@@ -19,7 +21,7 @@ let winds=[];
 let currentWind=null;
 let bounces=0;
 const MAX_BOUNCES=10, INITIAL_SPEED=400, MIN_SPEED=150, MAX_SPEED=1000, BOUNCE_DAMPING=0.985, TIME_DAMPING=0.999;
-
+ 
 // --- Ветер: направления заданы как экранные векторы (x вправо+, y вниз+),
 // т.к. север — это верх экрана. "Дует с СЗ" значит поток идёт на ЮВ и т.д.
 const DIR_N =[0,1];                              // с севера -> вниз
@@ -90,7 +92,7 @@ function updateWindArrow(){
  const angle=Math.atan2(dir[1],dir[0])*180/Math.PI;
  windArrowEl.style.transform='rotate('+angle+'deg)';
 }
-
+ 
 function pointFromEvent(e){
  const r=canvas.getBoundingClientRect();
  return {x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};
@@ -134,7 +136,7 @@ window.addEventListener('keydown',e=>{
  if(e.code==='Space'||e.code==='Enter'){e.preventDefault();if(!ball.active)serve()}
  if(e.code==='KeyR'){score=0;target.h=PADDLE_START_H;targetY=236;targetDir=1;resetBall()}
 });
-
+ 
 function hit(c,r){
  const qx=Math.max(r.x,Math.min(c.x,r.x+r.w));
  const qy=Math.max(r.y,Math.min(c.y,r.y+r.h));
@@ -206,11 +208,11 @@ function update(dt){
    return;
  }
 }
-
+ 
 function syncBadges(){
  scoreValue.textContent=score;
 }
-
+ 
 // --- Фоновая музыка ---
 // Браузеры блокируют автозапуск звука без жеста пользователя. Нажатие
 // кнопки «ИГРАТЬ» на интро-экране — как раз такой жест, поэтому музыку
@@ -224,23 +226,35 @@ function tryStartMusic(){
 }
 canvas.addEventListener('click',tryStartMusic);
 window.addEventListener('keydown',tryStartMusic);
-
+ 
 // --- Интро-гиф перед стартом игры ---
 // GIF зациклен сам по себе и не даёт события «конец», поэтому просто
 // проигрывается на фоне, а кнопка «ИГРАТЬ» в любой момент запускает игру.
 const introOverlay=document.getElementById('introOverlay');
 const introStart=document.getElementById('introStart');
-function finishIntro(){
+const rulesOverlay=document.getElementById('rulesOverlay');
+const rulesStart=document.getElementById('rulesStart');
+ 
+// Интро -> экран с правилами (музыка ещё не запускается, чтобы не
+// перебивать её потом при старте игры).
+function showRules(){
  introOverlay.classList.add('hidden');
- tryStartMusic();
- // Дожидаемся конца плавного затухания (transition в CSS) и только
- // потом окончательно убираем оверлей из потока/событий.
  introOverlay.addEventListener('transitionend',()=>{
    introOverlay.style.display='none';
  },{once:true});
+ rulesOverlay.classList.add('show');
 }
-introStart.addEventListener('click',finishIntro);
-
+// Экран с правилами -> сама игра.
+function startGame(){
+ rulesOverlay.classList.remove('show');
+ tryStartMusic();
+ rulesOverlay.addEventListener('transitionend',()=>{
+   rulesOverlay.style.display='none';
+ },{once:true});
+}
+introStart.addEventListener('click',showRules);
+rulesStart.addEventListener('click',startGame);
+ 
 function draw(){
  ctx.clearRect(0,0,W,H);
  // The background has no baked-in paddle/ball/table; all game elements below are live.
@@ -251,7 +265,7 @@ function draw(){
 }
 function loop(now){const dt=Math.min(.025,(now-last)/1000);last=now;update(dt);flash=Math.max(0,flash-dt);draw();requestAnimationFrame(loop)}
 draw();
-
+ 
 function normalizeWinds(data){
   return Array.isArray(data) ? data.filter(w=>w&&w.name&&w.description) : [];
 }
@@ -263,7 +277,7 @@ function showWinds(data){
     windDescription.textContent='Не удалось найти список ветров.';
   }
 }
-
+ 
 // В обычном web-сервере читаем winds.json — это основной источник данных.
 // При запуске index.html напрямую через file:// браузеры часто блокируют fetch()
 // локального JSON из-за CORS. Поэтому используем сгенерированный из того же JSON
@@ -275,6 +289,8 @@ fetch('assets/winds.json')
     console.warn('winds.json не загружен, использую локальную копию:', err);
     showWinds(window.WINDS_DATA || []);
   });
-
+ 
 requestAnimationFrame(loop);
 })();
+ 
+
