@@ -1,5 +1,3 @@
-
-Game · JS
 (()=>{
 const W=1280,H=714;
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
