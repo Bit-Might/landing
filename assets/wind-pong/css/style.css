@@ -152,3 +152,38 @@ canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
 .intro-start:hover{filter:brightness(1.2)}
 .intro-start:active{transform:translate(-50%,-50%) scale(.94)}
 .intro-overlay.hidden{opacity:0;pointer-events:none}
+
+.rotate-prompt{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  background:#06071b;
+  color:#f2ece0;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-family:Georgia,serif;
+  padding:20px;
+}
+.rotate-icon{
+  font-size:15vw;
+  line-height:1;
+  margin-bottom:16px;
+  animation:rotateHint 1.6s ease-in-out infinite;
+}
+.rotate-prompt p{
+  margin:0;
+  font-size:5vw;
+  font-weight:700;
+  letter-spacing:.5px;
+}
+@keyframes rotateHint{
+  0%,100%{transform:rotate(0deg)}
+  50%{transform:rotate(90deg)}
+}
+@media (pointer:coarse) and (orientation:portrait){
+  .rotate-prompt{display:flex}
+  .stage{display:none}
+}
