@@ -117,14 +117,26 @@ function selectRandomWind(){
  windDescription.textContent=currentWind.description;
  updateWindArrow();
 }
+// --- Звуковые эффекты ---
+// cloneNode позволяет запускать несколько перекрывающихся проигрываний
+// подряд (например, если мяч быстро отскакивает), не дожидаясь конца
+// предыдущего звука.
+const sfxHit=document.getElementById('sfxHit');
+function playSfx(el,volume){
+ const node=el.cloneNode(true);
+ node.volume=volume!=null?volume:1;
+ node.play().catch(()=>{/* игнорируем блокировку автоплея до жеста пользователя */});
+}
+ 
 function serve(){
  if(ball.active)return;
  let dx=mouse.x-ball.x,dy=mouse.y-ball.y;
- // Do not allow an accidental click exactly on the ball to create a zero vector.
+
  if(Math.hypot(dx,dy)<8) return;
  const len=Math.hypot(dx,dy);
  const speed=INITIAL_SPEED;
  ball.vx=dx/len*speed;ball.vy=dy/len*speed;ball.active=true;bounces=0;
+ playSfx(sfxHit,0.5);
 }
 canvas.addEventListener('mousemove',setMouse);
 canvas.addEventListener('mouseenter',e=>{setMouse(e)});
@@ -142,8 +154,8 @@ function hit(c,r){
 }
 function success(){
  score++;
+ playSfx(sfxHit,1);
  target.h=Math.max(PADDLE_MIN_H, PADDLE_START_H-score*PADDLE_SHRINK);
- // Keep the shrinking paddle inside its vertical travel range.
  targetY=Math.max(target.minY,Math.min(targetY,target.maxY));
  flash=.75;resetBall();
 }
@@ -182,6 +194,7 @@ function update(dt){
  }
  const bounce=()=>{
    bounces++;
+   playSfx(sfxHit,0.35);
    const factor=BOUNCE_DAMPING;
    ball.vx*=factor;ball.vy*=factor;
    const speed=Math.hypot(ball.vx,ball.vy);
@@ -276,10 +289,6 @@ function showWinds(data){
   }
 }
  
-// В обычном web-сервере читаем winds.json — это основной источник данных.
-// При запуске index.html напрямую через file:// браузеры часто блокируют fetch()
-// локального JSON из-за CORS. Поэтому используем сгенерированный из того же JSON
-// резервный массив WINDS_DATA, чтобы игра работала и без локального сервера.
 fetch('assets/winds.json')
   .then(r=>{if(!r.ok) throw new Error('HTTP '+r.status); return r.json();})
   .then(showWinds)
@@ -291,4 +300,3 @@ fetch('assets/winds.json')
 requestAnimationFrame(loop);
 })();
  
-
