@@ -124,7 +124,13 @@
             border: 2px solid #5a189a;
             border-radius: 4px;
             box-shadow: 0 0 25px rgba(123, 44, 191, 0.5);
-            image-rendering: auto; 
+            image-rendering: auto;
+            /* В игре на лендинге кадр ниже окна браузера: без ограничения по высоте
+               стакан 600px выталкивает шапку с логотипом и счётом за верхний край.
+               160px — шапка, отступы и подсказка под стаканом. */
+            max-height: calc(100vh - 160px);
+            height: auto;
+            width: auto;
         }
 
         .controls-hint {

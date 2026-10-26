@@ -189,6 +189,27 @@
                             </a>                            
 
                             <a
+                                href="assets/ya-za-tetey.html"
+                                class="game-card"
+                                data-description="Я за тётей<br>
+                                <br>
+                                Очередь — это игра на внимательность.<br>
+                                Тыкай в маму в меховой шапке, чтобы не потерять её, и в тётю в красном пальто, чтобы не потерять место. Пока смотришь на одну, теряешь другую.<br>
+                                Два дня из жизни очереди."
+                            >
+                                <div class="card-cover cover-2">
+                                    <img
+                                        src="assets/ya-za-tetey.jpg"
+                                        alt="Я за тётей"
+                                    />
+                                </div>
+                                <div class="card-info">
+                                    <h4>Я ЗА ТЁТЕЙ</h4>
+                                    <p>2 уровня</p>
+                                </div>
+                            </a>
+
+                            <a
                                 href="#game3"
                                 class="game-card"
                                 data-description="Новая игра - Скоро"
@@ -260,16 +281,32 @@
         <script>
             let originalMainContent = document.querySelector(".main-content").innerHTML;
 
+            // iframe занимает всю высоту окна под шапкой, чтобы поле игры было максимальным и целиком в кадре.
+            function fitGameFrame() {
+                const iframe = document.querySelector(".main-content iframe");
+                if (!iframe) return;
+                const headerHeight = document.querySelector(".header").offsetHeight;
+                const bodyStyle = getComputedStyle(document.body);
+                const bodyPadding = parseFloat(bodyStyle.paddingTop) + parseFloat(bodyStyle.paddingBottom);
+                const containerStyle = getComputedStyle(document.querySelector(".site-container"));
+                const containerBorders = parseFloat(containerStyle.borderTopWidth) + parseFloat(containerStyle.borderBottomWidth);
+                const height = Math.floor(window.innerHeight - headerHeight - bodyPadding - containerBorders);
+                iframe.style.height = `${Math.max(320, height)}px`;
+            }
+
+            window.addEventListener("resize", fitGameFrame);
+
             function loadGame(url) {
                 const mainContent = document.querySelector(".main-content");
                 mainContent.innerHTML = ''; // Clear previous content
                 mainContent.style.display = 'block';
+                mainContent.style.minHeight = '0'; // игру ограничивает только высота окна, а не min-height сетки
 
                 const iframe = document.createElement('iframe');
                 iframe.src = url;
                 iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
                 iframe.style.width = '100%';
-                iframe.style.height = '100vh'; // Take full viewport height
+                iframe.style.display = 'block'; // убирает зазор под inline-элементом
                 iframe.style.border = 'none';
 
                 iframe.onerror = () => {
@@ -279,14 +316,30 @@
                 };
 
                 mainContent.appendChild(iframe); // Then append the iframe
+                fitGameFrame();
+            }
+
+            // Игры лежат либо в папке (assets/game_1/index.html), либо отдельным файлом
+            // (assets/ya-za-tetey.html) — хеш для обеих схем должен восстанавливаться.
+            function gameIdFromUrl(url) {
+                const parts = url.split("/");
+                const last = parts[parts.length - 1];
+                return last === "index.html" ? parts[parts.length - 2] : last;
+            }
+
+            // Карточки-заглушки («скоро») ведут на #game3/#game4 — их нельзя грузить в iframe.
+            function isPlayableCard(card) {
+                const href = card.getAttribute("href");
+                return Boolean(href) && !href.startsWith("#");
             }
 
             document.querySelectorAll(".game-card").forEach(card => {
                 card.addEventListener("click", (event) => {
+                    if (!isPlayableCard(card)) return;
                     event.preventDefault();
                     const url = card.getAttribute("href");
                     loadGame(url);
-                    history.pushState({ gameUrl: url }, "", `#${url.split("/")[1]}`);
+                    history.pushState({ gameUrl: url }, "", `#${gameIdFromUrl(url)}`);
                 });
             });
 
@@ -296,13 +349,19 @@
                 } else {
                     document.querySelector(".main-content").innerHTML = originalMainContent;
                     document.querySelector(".main-content").style.display = 'grid';
+                    document.querySelector(".main-content").style.minHeight = '';
                 }
             };
 
             // Initial load
             if (window.location.hash) {
-                const gameUrl = `assets/${window.location.hash.substring(1)}/index.html`;
-                loadGame(gameUrl);
+                const gameId = decodeURIComponent(window.location.hash.substring(1));
+                const gameCard = Array.from(document.querySelectorAll(".game-card"))
+                    .filter(isPlayableCard)
+                    .find(card => gameIdFromUrl(card.getAttribute("href")) === gameId);
+                if (gameCard) {
+                    loadGame(gameCard.getAttribute("href"));
+                }
             }
         </script>
     </body>

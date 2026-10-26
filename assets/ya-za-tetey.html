@@ -16,8 +16,9 @@
 }
 html,body{height:100%}
 [hidden]{display:none!important}
-body{background:var(--void);color:var(--paper);font-family:var(--mono)}
-.app{width:100%;max-width:460px;margin:0 auto;box-sizing:border-box;min-height:100%;
+body{margin:0;background:var(--void);color:var(--paper);font-family:var(--mono)}
+/* Поле тянется под высоту окна: 288px — шапка, текст, вкладки и подсказка под сценой; 460px — минимум, 900px — максимум. */
+.app{width:100%;max-width:min(100%,900px,max(460px,calc((100vh - 288px) * 16 / 15 + 32px)));margin:0 auto;box-sizing:border-box;min-height:100%;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px;
   display:flex;flex-direction:column;gap:12px}
 .bar{display:flex;align-items:center;gap:12px;min-height:64px}
